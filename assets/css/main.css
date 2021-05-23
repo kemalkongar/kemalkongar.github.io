@@ -892,9 +892,9 @@ input, select, textarea {
 
 			ul.icons li .icon {
 				display: inline-block;
-				width: 2.5em;
-				height: 2.5em;
-				line-height: 2.5em;
+				width: 5em;
+				height: 5em;
+				line-height: 5em;
 				text-align: center;
 			}
 
