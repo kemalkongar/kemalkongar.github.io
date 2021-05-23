@@ -892,14 +892,14 @@ input, select, textarea {
 
 			ul.icons li .icon {
 				display: inline-block;
-				width: 2.5px;
-				height: 2.5em;
+				width: 0px;
+				height: 0em;
 				line-height: 2.5em;
 				text-align: center;
 			}
 
 				ul.icons li .icon:before {
-					font-size: 1.25rem;
+					font-size: 0rem;
 				}
 
 /* Table */
