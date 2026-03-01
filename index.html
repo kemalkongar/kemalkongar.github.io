@@ -677,7 +677,7 @@
 
             // 10. Value added vs active risk — concave parabola peaking at ω*
             function drawActiveRiskCurve() {
-                const b = drawAxes('ωₐ (Active Risk)', 'Value Added');
+                const b = drawAxes('', 'Value Added');
                 const plotW = b.right - b.left;
                 const plotH = b.bottom - b.top;
                 const n = 80;
@@ -711,10 +711,17 @@
                 ctx.fillStyle = DARK;
                 ctx.fill();
 
+                // Tick label on x-axis
+                ctx.beginPath();
+                ctx.moveTo(optX, b.bottom);
+                ctx.lineTo(optX, b.bottom - 4);
+                ctx.strokeStyle = GRAY;
+                ctx.lineWidth = 1;
+                ctx.stroke();
                 ctx.fillStyle = MUTED;
-                ctx.font = `11px ${SANS}`;
+                ctx.font = `${w() < 360 ? 9 : 10}px ${SANS}`;
                 ctx.textAlign = 'center';
-                ctx.fillText('ω*', optX, b.bottom + 14);
+                ctx.fillText('ωₐ=ω*', optX, b.bottom + 13);
             }
 
             // Scene order: theory → risk → factors → active management
