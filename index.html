@@ -112,6 +112,18 @@
             color: #9ca3af;
             user-select: none;
         }
+
+        .finance-canvas {
+            display: block;
+            width: 100%;
+            height: 140px;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 28px 24px;
+            }
+        }
     </style>
 </head>
 
@@ -134,7 +146,653 @@
             <span class="sep">&middot;</span>
             <a href="mailto:contact@kemalkongar.com">Email</a>
         </div>
+
+        <div class="divider"></div>
+        <canvas class="finance-canvas" id="financeCanvas"></canvas>
     </div>
+
+    <script>
+        (function () {
+            const canvas = document.getElementById('financeCanvas');
+            const ctx = canvas.getContext('2d');
+            const DISPLAY_TIME = 4000;
+            const FADE_TIME = 1800;
+            const DARK = '#0a1628';
+            const GRAY = '#9ca3af';
+            const MUTED = '#6b7280';
+            const SERIF = '"Times New Roman", Georgia, serif';
+            const SANS = 'Calibri, sans-serif';
+
+            function resize() {
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * devicePixelRatio;
+                canvas.height = rect.height * devicePixelRatio;
+                ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const w = () => canvas.width / devicePixelRatio;
+            const h = () => canvas.height / devicePixelRatio;
+
+            function drawAxes(xLabel, yLabel) {
+                const compact = w() < 360;
+                const mx = compact ? 36 : 50, my = 20, bm = 24, rm = compact ? 10 : 20;
+                const fsz = compact ? 10 : 12;
+                ctx.beginPath();
+                ctx.moveTo(mx, my);
+                ctx.lineTo(mx, h() - bm);
+                ctx.lineTo(w() - rm, h() - bm);
+                ctx.strokeStyle = GRAY;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.fillStyle = MUTED;
+                ctx.font = `${fsz}px ${SANS}`;
+                ctx.textAlign = 'center';
+                ctx.fillText(xLabel, (mx + w() - rm) / 2, h() - 6);
+                ctx.save();
+                ctx.translate(compact ? 10 : 14, (my + h() - bm) / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText(yLabel, 0, 0);
+                ctx.restore();
+                return { left: mx, top: my, bottom: h() - bm, right: w() - rm };
+            }
+
+            // Rich formula renderer with inline fractions and subscripts
+            // Parts: { t: "text", sub: "x" } or { n: "numerator", d: "denominator" }
+            function drawRichFormula(parts) {
+                const compact = w() < 360;
+                const sz = compact ? 17 : 21, fsz = compact ? 11 : 14, subSz = Math.round(sz * 0.6);
+                const midY = h() * 0.55;
+                ctx.fillStyle = DARK;
+                // Measure
+                const measured = parts.map(p => {
+                    if (p.t !== undefined) {
+                        ctx.font = `${sz}px ${SERIF}`;
+                        let pw = ctx.measureText(p.t).width;
+                        if (p.sub) {
+                            ctx.font = `${subSz}px ${SERIF}`;
+                            pw += ctx.measureText(p.sub).width;
+                        }
+                        return { ...p, w: pw, kind: 't' };
+                    } else {
+                        ctx.font = `${fsz}px ${SERIF}`;
+                        const nw = ctx.measureText(p.n).width;
+                        let dw = ctx.measureText(p.d).width;
+                        if (p.dsub) {
+                            ctx.font = `${Math.round(fsz * 0.65)}px ${SERIF}`;
+                            dw += ctx.measureText(p.dsub).width;
+                        }
+                        const fw = Math.max(nw, dw) + 10;
+                        return { ...p, w: fw, kind: 'f' };
+                    }
+                });
+                const totalW = measured.reduce((s, m) => s + m.w, 0);
+                let x = w() / 2 - totalW / 2;
+                // Draw
+                measured.forEach(m => {
+                    if (m.kind === 't') {
+                        ctx.font = `${sz}px ${SERIF}`;
+                        ctx.textAlign = 'left';
+                        ctx.fillStyle = DARK;
+                        ctx.fillText(m.t, x, midY);
+                        const mainW = ctx.measureText(m.t).width;
+                        if (m.sub) {
+                            ctx.font = `${subSz}px ${SERIF}`;
+                            ctx.fillText(m.sub, x + mainW, midY + 5);
+                        }
+                        x += m.w;
+                    } else {
+                        const cx = x + m.w / 2;
+                        ctx.font = `${fsz}px ${SERIF}`;
+                        ctx.textAlign = 'center';
+                        ctx.fillStyle = DARK;
+                        ctx.fillText(m.n, cx, midY - 9);
+                        ctx.beginPath();
+                        ctx.moveTo(x + 2, midY - 3);
+                        ctx.lineTo(x + m.w - 2, midY - 3);
+                        ctx.strokeStyle = DARK;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        ctx.fillText(m.d, cx, midY + 13);
+                        if (m.dsub) {
+                            const dMainW = ctx.measureText(m.d).width;
+                            ctx.font = `${Math.round(fsz * 0.65)}px ${SERIF}`;
+                            ctx.textAlign = 'left';
+                            ctx.fillText(m.dsub, cx + dMainW / 2, midY + 16);
+                        }
+                        x += m.w;
+                    }
+                });
+            }
+
+            // 1. Efficient Frontier
+            function drawEfficientFrontier() {
+                const b = drawAxes('σ (Risk)', 'E(R)');
+                const plotW = b.right - b.left;
+                const plotH = b.bottom - b.top;
+                const minSigX = 0.18;
+                const pts = [];
+                for (let t = -1; t <= 1; t += 0.015) {
+                    const sx = minSigX + 0.7 * t * t;
+                    const ry = 0.5 + 0.4 * t;
+                    pts.push({ x: b.left + sx * plotW, y: b.bottom - ry * plotH });
+                }
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                ctx.strokeStyle = DARK;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                const rfY = b.bottom - 0.15 * plotH;
+                const tTan = 0.4;
+                const tanX = b.left + (minSigX + 0.7 * tTan * tTan) * plotW;
+                const tanY = b.bottom - (0.5 + 0.4 * tTan) * plotH;
+                const slope = (tanY - rfY) / (tanX - b.left);
+
+                ctx.beginPath();
+                ctx.setLineDash([5, 4]);
+                ctx.moveTo(b.left, rfY);
+                const cmlEndY = rfY + slope * (b.right - b.left);
+                ctx.lineTo(b.right, Math.max(b.top, cmlEndY));
+                ctx.strokeStyle = MUTED;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                [-0.6, -0.2, 0.15, 0.5, 0.8].forEach(t => {
+                    const dx = b.left + (minSigX + 0.7 * t * t + 0.04) * plotW;
+                    const dy = b.bottom - (0.5 + 0.4 * t - 0.02) * plotH;
+                    ctx.beginPath();
+                    ctx.arc(dx, dy, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = DARK;
+                    ctx.fill();
+                });
+
+                ctx.fillStyle = MUTED;
+                ctx.font = `11px ${SANS}`;
+                ctx.textAlign = 'left';
+                ctx.fillText('Rꜰ', b.left + 4, rfY - 6);
+                ctx.fillText('CML', b.right - 32, Math.max(b.top + 12, cmlEndY - 6));
+            }
+
+            // 2. CAPM — E(Rᵢ) = Rꜰ + βᵢ [E(Rₘ) − Rꜰ]
+            function drawCAPM() {
+                drawRichFormula([{ t: 'E(Rᵢ) = Rꜰ + βᵢ [E(Rₘ) − Rꜰ]' }]);
+            }
+
+            // 3. APT — E(Rᵢ) = Rꜰ + β₁λ₁ + β₂λ₂ + ⋯ + βₖλₖ
+            function drawAPT() {
+                drawRichFormula([{ t: 'E(Rᵢ) = Rꜰ + β₁λ₁ + β₂λ₂ + ⋯ + βₖλₖ' }]);
+            }
+
+            // 4. Black-Scholes — C = S·N(d₁) − Ke⁻ʳᵀ·N(d₂)
+            function drawBlackScholes() {
+                drawRichFormula([{ t: 'C = S·N(d₁) − Ke⁻ʳᵀ·N(d₂)' }]);
+            }
+
+            // 5. Security Market Line — wider left margin so Rꜰ doesn't overlap y-axis label
+            function drawSML() {
+                const compact = w() < 360;
+                const mx = compact ? 44 : 58, my = 20, bm = 24, rm = compact ? 10 : 20;
+                const fsz = compact ? 10 : 12;
+                ctx.beginPath();
+                ctx.moveTo(mx, my);
+                ctx.lineTo(mx, h() - bm);
+                ctx.lineTo(w() - rm, h() - bm);
+                ctx.strokeStyle = GRAY;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.fillStyle = MUTED;
+                ctx.font = `${fsz}px ${SANS}`;
+                ctx.textAlign = 'center';
+                ctx.fillText('β', (mx + w() - rm) / 2, h() - 6);
+                ctx.save();
+                ctx.translate(compact ? 10 : 14, (my + h() - bm) / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('E(R)', 0, 0);
+                ctx.restore();
+                const b = { left: mx, top: my, bottom: h() - bm, right: w() - rm };
+                const plotH = b.bottom - b.top;
+                const plotW = b.right - b.left;
+                const rfY = b.bottom - 0.15 * plotH;
+                const mktX = b.left + 0.5 * plotW;
+                const mktY = b.bottom - 0.6 * plotH;
+                const slope = (mktY - rfY) / (mktX - b.left);
+
+                ctx.beginPath();
+                ctx.moveTo(b.left, rfY);
+                ctx.lineTo(b.right, Math.max(b.top, rfY + slope * plotW));
+                ctx.strokeStyle = DARK;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(mktX, mktY, 4, 0, Math.PI * 2);
+                ctx.fillStyle = DARK;
+                ctx.fill();
+                ctx.fillStyle = MUTED;
+                ctx.font = `11px ${SANS}`;
+                ctx.textAlign = 'left';
+                ctx.fillText('M', mktX + 7, mktY + 4);
+                ctx.textAlign = 'right';
+                ctx.fillText('Rꜰ', b.left - 5, rfY + 4);
+
+                [{ beta: 0.3, off: 0.04 }, { beta: 0.6, off: -0.05 },
+                 { beta: 0.8, off: 0.06 }, { beta: 1.2, off: -0.03 },
+                 { beta: 1.5, off: 0.07 }, { beta: 1.8, off: -0.04 }].forEach(s => {
+                    const sx = b.left + (s.beta / 2) * plotW;
+                    const sy = rfY + slope * (sx - b.left) - s.off * plotH;
+                    ctx.beginPath();
+                    ctx.arc(sx, Math.max(b.top + 3, sy), 2.5, 0, Math.PI * 2);
+                    ctx.fillStyle = MUTED;
+                    ctx.fill();
+                });
+
+                ctx.fillStyle = MUTED;
+                ctx.font = `10px ${SANS}`;
+                ctx.textAlign = 'center';
+                ctx.fillText('1', mktX, b.bottom + 14);
+            }
+
+            // 6. Normal distribution with VaR
+            function drawNormalDist() {
+                const compact = w() < 360;
+                const mx = compact ? 28 : 40, my = 20, bm = 24, rm = compact ? 10 : 20;
+                const b = { left: mx, top: my, bottom: h() - bm, right: w() - rm };
+
+                ctx.beginPath();
+                ctx.moveTo(b.left, b.bottom);
+                ctx.lineTo(b.right, b.bottom);
+                ctx.strokeStyle = GRAY;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                const centerX = (b.left + b.right) / 2;
+                const spread = (b.right - b.left) * 0.35;
+                const peakH = (b.bottom - b.top) * 0.85;
+                const pts = [];
+                const n = 100;
+                for (let i = 0; i <= n; i++) {
+                    const t = (i / n) * 2 - 1;
+                    const x = centerX + t * spread * 1.8;
+                    const gauss = Math.exp(-0.5 * Math.pow(t * 2.8, 2));
+                    pts.push({ x, y: b.bottom - gauss * peakH });
+                }
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                ctx.strokeStyle = DARK;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                const varCutoff = Math.floor(n * 0.15);
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, b.bottom);
+                for (let i = 0; i <= varCutoff; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                ctx.lineTo(pts[varCutoff].x, b.bottom);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(10, 22, 40, 0.12)';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.setLineDash([4, 3]);
+                ctx.moveTo(pts[varCutoff].x, b.bottom);
+                ctx.lineTo(pts[varCutoff].x, pts[varCutoff].y);
+                ctx.strokeStyle = MUTED;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = MUTED;
+                ctx.font = `11px ${SANS}`;
+                ctx.textAlign = 'center';
+                ctx.fillText('VaR', pts[varCutoff].x, b.bottom + 14);
+                ctx.fillText('μ', centerX, b.bottom + 14);
+                ctx.fillText('−σ', centerX - spread * 0.71, b.bottom + 14);
+                ctx.fillText('+σ', centerX + spread * 0.71, b.bottom + 14);
+            }
+
+            // 7. Full Fundamental Law of Active Management: IR = IC · TC · √BR
+            function drawFundamentalLaw() {
+                drawRichFormula([{ t: 'IR = IC · TC · √BR' }]);
+            }
+
+            // 8. Active return (Grinold): αᵢ = IC · TC · σᵢ · sᵢ
+            function drawActiveReturn() {
+                drawRichFormula([{ t: 'αᵢ = IC · TC · σᵢ · sᵢ' }]);
+            }
+
+            // 9. Optimal active risk: ω* = (IR / SR_B) · σ_B with proper fraction
+            function drawOptimalActiveRisk() {
+                drawRichFormula([
+                    { t: 'ω* = ' },
+                    { n: 'IR', d: 'SR', dsub: 'B' },
+                    { t: ' · σ', sub: 'B' }
+                ]);
+            }
+
+            // 10. Mean-variance optimal weight: w* = 1/λ Σ⁻¹ μ with proper fraction
+            function drawMVOptimalWeight() {
+                drawRichFormula([
+                    { t: 'w* = ' },
+                    { n: '1', d: 'λ' },
+                    { t: ' Σ⁻¹ μ' }
+                ]);
+            }
+
+            // 11. Information Coefficient (Spearman rank correlation)
+            function drawIC() {
+                drawRichFormula([
+                    { t: 'IC = 1 − ' },
+                    { n: '6 Σdᵢ²', d: 'n(n² − 1)' }
+                ]);
+            }
+
+            // 12. Value added vs active risk — concave parabola peaking at ω*
+            function drawActiveRiskCurve() {
+                const b = drawAxes('ωₐ (Active Risk)', 'Value Added');
+                const plotW = b.right - b.left;
+                const plotH = b.bottom - b.top;
+                const n = 80;
+                const pts = [];
+                const peakT = 0.45;
+                for (let i = 0; i <= n; i++) {
+                    const t = i / n;
+                    const va = 0.15 + 0.7 * (1 - Math.pow((t - peakT) / 0.55, 2));
+                    pts.push({ x: b.left + t * plotW, y: b.bottom - Math.max(va, 0.05) * plotH });
+                }
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                ctx.strokeStyle = DARK;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                const optX = b.left + peakT * plotW;
+                const optY = pts[Math.round(peakT * n)].y;
+                ctx.beginPath();
+                ctx.setLineDash([4, 3]);
+                ctx.moveTo(optX, b.bottom);
+                ctx.lineTo(optX, optY);
+                ctx.strokeStyle = MUTED;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.beginPath();
+                ctx.arc(optX, optY, 4, 0, Math.PI * 2);
+                ctx.fillStyle = DARK;
+                ctx.fill();
+
+                ctx.fillStyle = MUTED;
+                ctx.font = `11px ${SANS}`;
+                ctx.textAlign = 'center';
+                ctx.fillText('ω*', optX, b.bottom + 14);
+            }
+
+            // Factor return components shared by decomposition charts
+            const FACTOR_COMPONENTS = [
+                { label: 'Market', value: 0.32, alpha: 0.25 },
+                { label: 'Industry', value: 0.12, alpha: 0.40 },
+                { label: 'Style', value: -0.08, alpha: 0.55 },
+                { label: 'Idiosyncratic', value: 0.14, alpha: 0.75 }
+            ];
+
+            // 13. Return Decomposition — Barra-style waterfall chart
+            function drawReturnDecomposition() {
+                const compact = w() < 360;
+                const mx = compact ? 36 : 50, my = 20, bm = 30, rm = 14;
+                const b = { left: mx, top: my, bottom: h() - bm, right: w() - rm };
+                const plotH = b.bottom - b.top;
+
+                // Y-axis
+                ctx.beginPath();
+                ctx.moveTo(b.left, b.top);
+                ctx.lineTo(b.left, b.bottom);
+                ctx.strokeStyle = GRAY;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.fillStyle = MUTED;
+                ctx.font = `${compact ? 10 : 12}px ${SANS}`;
+                ctx.save();
+                ctx.translate(compact ? 10 : 14, (b.top + b.bottom) / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.textAlign = 'center';
+                ctx.fillText('Return', 0, 0);
+                ctx.restore();
+
+                const components = FACTOR_COMPONENTS;
+                const total = components.reduce((s, c) => s + c.value, 0);
+
+                // Scale
+                const maxVal = Math.max(total, components.reduce((s, c) => s + Math.max(c.value, 0), 0)) * 1.15;
+                const minVal = Math.min(0, ...(() => {
+                    let r = 0;
+                    return components.map(c => { r += c.value; return r; });
+                })()) * 1.15;
+                const range = maxVal - minVal;
+                const yScale = plotH / range;
+                const zeroY = b.top + maxVal * yScale;
+
+                const barCount = components.length + 1;
+                const totalWidth = b.right - b.left;
+                const gapFrac = compact ? 0.03 : 0.05;
+                const gap = totalWidth * gapFrac;
+                const barW = (totalWidth - gap * (barCount + 1)) / barCount;
+                const labelSz = compact ? 8 : 10;
+                const shortLabels = compact
+                    ? ['Mkt', 'Ind', 'Style', 'Idio', 'Total']
+                    : ['Market', 'Industry', 'Style', 'Idio', 'Total'];
+
+                let running = 0;
+                components.forEach((c, i) => {
+                    const x = b.left + gap + i * (barW + gap);
+                    const barTop = zeroY - Math.max(running + c.value, running) * yScale;
+                    const barBot = zeroY - Math.min(running + c.value, running) * yScale;
+
+                    ctx.fillStyle = `rgba(10, 22, 40, ${c.alpha})`;
+                    ctx.fillRect(x, barTop, barW, barBot - barTop);
+
+                    // Connector line
+                    if (i < components.length - 1) {
+                        const connY = zeroY - (running + c.value) * yScale;
+                        ctx.beginPath();
+                        ctx.setLineDash([3, 2]);
+                        ctx.moveTo(x + barW, connY);
+                        ctx.lineTo(x + barW + gap, connY);
+                        ctx.strokeStyle = GRAY;
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+
+                    ctx.fillStyle = MUTED;
+                    ctx.font = `${labelSz}px ${SANS}`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(shortLabels[i], x + barW / 2, b.bottom + 13);
+
+                    running += c.value;
+                });
+
+                // Total bar
+                const tX = b.left + gap + components.length * (barW + gap);
+                const tTop = zeroY - Math.max(total, 0) * yScale;
+                const tBot = zeroY - Math.min(total, 0) * yScale;
+                ctx.fillStyle = DARK;
+                ctx.fillRect(tX, tTop, barW, tBot - tTop);
+                ctx.fillStyle = MUTED;
+                ctx.font = `${labelSz}px ${SANS}`;
+                ctx.textAlign = 'center';
+                ctx.fillText(shortLabels[4], tX + barW / 2, b.bottom + 13);
+
+                // Zero line
+                ctx.beginPath();
+                ctx.moveTo(b.left, zeroY);
+                ctx.lineTo(b.right, zeroY);
+                ctx.strokeStyle = GRAY;
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+
+            // 14. Return Decomposition over time — stacked area chart
+            function drawReturnTimeSeries() {
+                const compact = w() < 360;
+                const mx = compact ? 36 : 50, my = 16, bm = 24, rm = compact ? 10 : 20;
+                const b = { left: mx, top: my, bottom: h() - bm, right: w() - rm };
+                const plotW = b.right - b.left;
+                const plotH = b.bottom - b.top;
+
+                // Axes
+                ctx.beginPath();
+                ctx.moveTo(b.left, b.top);
+                ctx.lineTo(b.left, b.bottom);
+                ctx.lineTo(b.right, b.bottom);
+                ctx.strokeStyle = GRAY;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.fillStyle = MUTED;
+                ctx.font = `${compact ? 10 : 12}px ${SANS}`;
+                ctx.textAlign = 'center';
+                ctx.fillText('Time', (b.left + b.right) / 2, h() - 4);
+                ctx.save();
+                ctx.translate(compact ? 10 : 14, (b.top + b.bottom) / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('Cumulative Return', 0, 0);
+                ctx.restore();
+
+                // Generate smooth cumulative paths per factor
+                const n = 60;
+                const factors = FACTOR_COMPONENTS;
+                const seeds = [2.1, 5.3, 8.7, 12.1];
+                function pseudoRand(seed, i) {
+                    return Math.sin(seed * 1000 + i * 137.5) * 0.5 + 0.5;
+                }
+
+                // Build cumulative series per factor
+                const series = factors.map((f, fi) => {
+                    const pts = [0];
+                    const drift = f.value / n;
+                    for (let i = 1; i <= n; i++) {
+                        const noise = (pseudoRand(seeds[fi], i) - 0.5) * 0.015;
+                        pts.push(pts[i - 1] + drift + noise);
+                    }
+                    return pts;
+                });
+
+                // Stack: cumulative sum across factors
+                const stacked = series.map((_, fi) =>
+                    Array.from({ length: n + 1 }, (_, i) =>
+                        series.slice(0, fi + 1).reduce((s, sr) => s + sr[i], 0)
+                    )
+                );
+
+                // Y range
+                const allVals = stacked[stacked.length - 1];
+                const yMin = Math.min(0, ...stacked.flat()) * 1.1;
+                const yMax = Math.max(...allVals) * 1.15;
+                const yRange = yMax - yMin;
+
+                function toX(i) { return b.left + (i / n) * plotW; }
+                function toY(v) { return b.bottom - ((v - yMin) / yRange) * plotH; }
+
+                // Draw stacked areas top-down so each layer paints over the previous
+                for (let fi = stacked.length - 1; fi >= 0; fi--) {
+                    const top = stacked[fi];
+                    const bot = fi > 0 ? stacked[fi - 1] : Array(n + 1).fill(0);
+
+                    ctx.beginPath();
+                    ctx.moveTo(toX(0), toY(top[0]));
+                    for (let i = 1; i <= n; i++) ctx.lineTo(toX(i), toY(top[i]));
+                    for (let i = n; i >= 0; i--) ctx.lineTo(toX(i), toY(bot[i]));
+                    ctx.closePath();
+                    ctx.fillStyle = `rgba(10, 22, 40, ${factors[fi].alpha})`;
+                    ctx.fill();
+                }
+
+                // Zero line
+                if (yMin < 0) {
+                    ctx.beginPath();
+                    ctx.setLineDash([4, 3]);
+                    ctx.moveTo(b.left, toY(0));
+                    ctx.lineTo(b.right, toY(0));
+                    ctx.strokeStyle = GRAY;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // Legend — compact row
+                const legendLabels = compact
+                    ? ['Mkt', 'Ind', 'Style', 'Idio']
+                    : ['Market', 'Industry', 'Style', 'Idio'];
+                const legSz = compact ? 7 : 9;
+                ctx.font = `${legSz}px ${SANS}`;
+                const swatchW = compact ? 6 : 8;
+                const legGap = compact ? 6 : 10;
+                const items = legendLabels.map((l, i) => ({
+                    label: l, alpha: factors[i].alpha,
+                    tw: ctx.measureText(l).width
+                }));
+                const totalLegW = items.reduce((s, it) => s + swatchW + 3 + it.tw + legGap, -legGap);
+                let lx = b.left + (plotW - totalLegW) / 2;
+                const ly = b.top + 6;
+                items.forEach(it => {
+                    ctx.fillStyle = `rgba(10, 22, 40, ${it.alpha})`;
+                    ctx.fillRect(lx, ly - swatchW + 1, swatchW, swatchW);
+                    ctx.fillStyle = MUTED;
+                    ctx.textAlign = 'left';
+                    ctx.fillText(it.label, lx + swatchW + 3, ly + 1);
+                    lx += swatchW + 3 + it.tw + legGap;
+                });
+            }
+
+            const scenes = [
+                drawEfficientFrontier, drawCAPM, drawAPT,
+                drawReturnDecomposition, drawReturnTimeSeries,
+                drawBlackScholes, drawSML, drawNormalDist,
+                drawFundamentalLaw, drawActiveReturn, drawOptimalActiveRisk,
+                drawMVOptimalWeight, drawIC, drawActiveRiskCurve
+            ];
+            let current = 0;
+            let cycleStart = performance.now();
+
+            function render(now) {
+                const elapsed = now - cycleStart;
+                const totalCycle = DISPLAY_TIME + FADE_TIME;
+
+                if (elapsed >= totalCycle) {
+                    current = (current + 1) % scenes.length;
+                    cycleStart += totalCycle;
+                }
+
+                const pos = now - cycleStart;
+                ctx.clearRect(0, 0, w(), h());
+
+                if (pos >= DISPLAY_TIME) {
+                    const t = (pos - DISPLAY_TIME) / FADE_TIME;
+                    const next = (current + 1) % scenes.length;
+                    ctx.save();
+                    ctx.globalAlpha = 1 - t;
+                    scenes[current]();
+                    ctx.restore();
+                    ctx.save();
+                    ctx.globalAlpha = t;
+                    scenes[next]();
+                    ctx.restore();
+                } else {
+                    scenes[current]();
+                }
+
+                requestAnimationFrame(render);
+            }
+
+            requestAnimationFrame(render);
+        })();
+    </script>
 </body>
 
 </html>
