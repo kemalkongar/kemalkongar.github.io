@@ -7,48 +7,136 @@
     <meta name="description" content="Kemal Kongar, Portfolio Analyst @ Select Equity Group">
 
     <title>Kemal Kongar</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180x180.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="manifest" href="/site.webmanifest">
-</head>
-
-<body>
     <style>
-        html {
-            display: table;
-            margin: auto;
-            padding: 10px;
-            background: #ffffff;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
         }
 
         body {
-            display: table-cell;
-            vertical-align: middle;
-            padding: 10px;
+            background: #0a1628;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Calibri, Aptos, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .card {
+            background: #f5f0eb;
+            max-width: 720px;
+            width: 100%;
+            border-radius: 4px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            padding: 40px 52px;
+        }
+
+        h1 {
+            color: #0a1628;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .title {
+            color: #4b5563;
+            font-size: 1.05rem;
+            font-weight: 400;
+            margin-top: 6px;
+        }
+
+        .subtle-link {
+            color: inherit;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            text-decoration-color: #9ca3af;
+            text-underline-offset: 3px;
+            transition: text-decoration-color 0.2s;
+        }
+
+        .subtle-link:hover {
+            text-decoration-color: #5a6070;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1.5px solid #0a1628;
+            opacity: 0.15;
+            margin: 28px 0;
+        }
+
+        h2 {
+            color: #0a1628;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 12px;
+        }
+
+        p {
+            color: #1f2937;
+            font-size: 0.95rem;
+            line-height: 1.65;
+        }
+
+        .links {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .links a {
+            color: #0a1628;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        .links .sep {
+            color: #9ca3af;
+            user-select: none;
         }
     </style>
-    <header>
+</head>
+
+<body>
+    <div class="card">
         <h1>Kemal Kongar</h1>
-    </header>
-    <h2>Portfolio Analyst @ Select Equity Group </h2>
-    <hr>
-    <h3>About</h3>
-    <p>
-        Hi, I'm Kemal and I work at the intersection of technology and finance. <br>
-        I've been in the industry since 2021 and graduated from McGill University with a degree in Computer
-        Science and Political Science in 2022.<br>
-        Recently, I've been focusing on using big data analytics to solve problems in the capital markets realm.</p>
-    <p>Here are links to my <a href="https://github.com/kemalkongar" target="_blank">GitHub</a> and <a
-            href="https://www.linkedin.com/in/kemalkongar" target="_blank" />LinkedIn</a>, along with an <a
-            href="mailto: contact@kemalkongar.com" target="_blank">email</a> link if you'd like to contact me directly.
-    </p>
-    <p>
-        Currently reading: <i>Annihilation</i> by Michel Houellebecq <br>
-        Previously read: <i>Advanced Portfolio Management</i> by Giuseppe A. Paleologo
-        <hr>
-    <p>If you think this website is too simplistic, you should take a look at <a
-            href="https://www.berkshirehathaway.com/">this</a>.</p>
+        <p class="title">Portfolio Analyst @ <a href="https://www.selectequity.com/" target="_blank" class="subtle-link">Select Equity Group</a></p>
+
+        <div class="divider"></div>
+
+        <h2>About</h2>
+        <p>
+            I apply quantitative methods and data analytics across capital markets. I've worked in the industry since 2021 and hold a Bachelor's degree in Computer Science and Political Science from McGill University.
+        </p>
+
+        <div class="divider"></div>
+
+        <div class="links">
+            <a href="https://github.com/kemalkongar" target="_blank">GitHub</a>
+            <span class="sep">&middot;</span>
+            <a href="https://www.linkedin.com/in/kemalkongar" target="_blank">LinkedIn</a>
+            <span class="sep">&middot;</span>
+            <a href="mailto:contact@kemalkongar.com">Email</a>
+        </div>
+    </div>
 </body>
 
 </html>
