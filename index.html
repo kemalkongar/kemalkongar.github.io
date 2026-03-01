@@ -268,22 +268,7 @@
 
             // 2. Security Market Line
             function drawSML() {
-                const compact = w() < 360;
-                const mx = compact ? 44 : 58, my = 20, bm = 24, rm = compact ? 10 : 20;
-                const fsz = compact ? 10 : 12;
-                ctx.beginPath();
-                ctx.moveTo(mx, my);
-                ctx.lineTo(mx, h() - bm);
-                ctx.lineTo(w() - rm, h() - bm);
-                ctx.strokeStyle = GRAY;
-                ctx.lineWidth = 1;
-                ctx.stroke();
-                ctx.save();
-                ctx.translate(compact ? 10 : 14, (my + h() - bm) / 2);
-                ctx.rotate(-Math.PI / 2);
-                ctx.fillText('E(R)', 0, 0);
-                ctx.restore();
-                const b = { left: mx, top: my, bottom: h() - bm, right: w() - rm };
+                const b = drawAxes('', 'E(R)');
                 const plotH = b.bottom - b.top;
                 const plotW = b.right - b.left;
                 const rfY = b.bottom - 0.15 * plotH;
@@ -317,7 +302,7 @@
                 ctx.lineWidth = 1;
                 ctx.stroke();
                 ctx.fillStyle = MUTED;
-                ctx.font = `${compact ? 9 : 10}px ${SANS}`;
+                ctx.font = `${w() < 360 ? 9 : 10}px ${SANS}`;
                 ctx.textAlign = 'center';
                 ctx.fillText('β=1', mktX, b.bottom + 13);
 
