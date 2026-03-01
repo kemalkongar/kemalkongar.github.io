@@ -816,8 +816,9 @@
         drawEfficientFrontier, drawSML,
         drawNormalDist, drawMonteCarloVaR,
         drawReturnDecomposition, drawReturnTimeSeries,
-        drawActiveReturn, drawProportionalWeight, drawICScatter, drawIRvsBreadth, drawActiveRiskCurve,
-        drawAlphaDecayCurve
+        drawICScatter, drawIRvsBreadth,
+        drawActiveReturn, drawProportionalWeight, drawAlphaDecayCurve,
+        drawActiveRiskCurve
     ];
     let current = 0;
     let cycleStart = performance.now();
