@@ -10,8 +10,8 @@
     const DARK = '#0a1628';
     const GRAY = '#9ca3af';
     const MUTED = '#626a75';
-    const SERIF = '"Times New Roman", Georgia, serif';
-    const SANS = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    const SERIF = 'ui-serif, Georgia, Cambria, "Times New Roman", serif';
+    const SANS = '"Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     let pixelRatio = 1;
 
     function resize() {
@@ -885,9 +885,16 @@
         scheduleNextScene();
     }
 
-    window.addEventListener('resize', restartAnimation, { passive: true });
-    document.addEventListener('visibilitychange', restartAnimation);
-    motionPreference.addEventListener('change', restartAnimation);
+    function start() {
+        window.addEventListener('resize', restartAnimation, { passive: true });
+        document.addEventListener('visibilitychange', restartAnimation);
+        motionPreference.addEventListener('change', restartAnimation);
+        restartAnimation();
+    }
 
-    restartAnimation();
+    if (document.fonts) {
+        document.fonts.load('400 12px "Source Sans 3"').then(start, start);
+    } else {
+        start();
+    }
 })();
