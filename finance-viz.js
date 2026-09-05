@@ -51,7 +51,7 @@
     let activeInteraction = null;
     const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
     let isPaused = motionPreference.matches;
-    const parameters = [0.7, 0.28, 0.72, 0.30, 0.48, { x: 0.62, y: 0.68 }];
+    const parameters = [0.65, 0.30, 0.48, { x: 0.62, y: 0.68 }];
 
     function clamp(value, min, max) {
         return Math.max(min, Math.min(max, value));
@@ -103,229 +103,85 @@
 
     function drawSignalQuality(group, parameter) {
         const compact = width < 410;
-        const bounds = { left: compact ? 38 : 46, right: width - 12, top: compact ? 34 : 22, bottom: 174 };
-        const base = [-11, -8.5, -6, -3.5, -1.2, 0.8, 3.2, 6.8, 10.5, 15];
-        const scale = 1 - parameter * 0.44;
-        const values = base.map(value => value * scale - (value > 0 ? parameter * 0.35 : 0));
-        const uncertainty = 1.2 + parameter * 2.1;
-        const yMin = -14;
-        const yMax = 18;
-        const zeroY = map(0, yMin, yMax, bounds.bottom, bounds.top);
-        const plotWidth = bounds.right - bounds.left;
-        const slot = plotWidth / values.length;
-        const barWidth = Math.max(8, slot * 0.58);
-
-        [-10, 0, 10].forEach(tick => {
-            const y = map(tick, yMin, yMax, bounds.bottom, bounds.top);
-            line(group, bounds.left, y, bounds.right, y, tick === 0 ? 'zero-line' : 'grid');
-            label(group, bounds.left - 6, y + 4, signed(tick, 0, ''), 'end');
-        });
-        label(group, bounds.left, 13, compact ? 'Residual return (bps / mo)' : 'Residual return (bps / month)', 'start', 'chart-note');
-
-        values.forEach((value, index) => {
-            const x = bounds.left + slot * index + (slot - barWidth) / 2;
-            const valueY = map(value, yMin, yMax, bounds.bottom, bounds.top);
-            const top = Math.min(valueY, zeroY);
-            const height = Math.max(1, Math.abs(zeroY - valueY));
-            const centerX = x + barWidth / 2;
-            const highY = map(value + uncertainty, yMin, yMax, bounds.bottom, bounds.top);
-            const lowY = map(value - uncertainty, yMin, yMax, bounds.bottom, bounds.top);
-            const tip = `Decile ${index + 1}: ${signed(value, 1, ' bps/month')} illustrative residual return`;
-
-            add(group, 'rect', {
-                x,
-                y: top,
-                width: barWidth,
-                height,
-                rx: 1.5,
-                fill: value >= 0 ? COLORS.teal : COLORS.red,
-                opacity: 0.82,
-                class: 'mark',
-                dataTip: tip
-            });
-            line(group, centerX, highY, centerX, lowY, 'axis');
-            line(group, centerX - 3, highY, centerX + 3, highY, 'axis');
-            line(group, centerX - 3, lowY, centerX + 3, lowY, 'axis');
-            if (!compact || index % 2 === 0 || index === values.length - 1) {
-                label(group, centerX, 192, `D${index + 1}`);
-            }
-        });
-
-        const spread = values[values.length - 1] - values[0];
-        label(group, bounds.right, compact ? 28 : 13, `Top–bottom spread ${spread.toFixed(1)} bps`, 'end', 'chart-value');
-
-        const lens = parameter < 0.33 ? 'In-sample' : parameter < 0.67 ? 'Cross-validated' : 'Out-of-sample, net';
-        return {
-            output: lens,
-            description: `Illustrative decile residual returns under the ${lens.toLowerCase()} evidence lens. The top-minus-bottom spread is ${spread.toFixed(1)} basis points per month.`,
-            caption: parameter < 0.67
-                ? 'Promising research can look orderly before holdouts, costs, and implementation frictions are introduced.'
-                : 'The ordering survives, but the spread compresses once the evidence is made more realistic.',
-            interaction: { x0: bounds.left, x1: bounds.right }
-        };
-    }
-
-    function drawAlphaDecay(group, parameter) {
-        const compact = width < 410;
-        const bounds = { left: compact ? 38 : 46, right: width - 18, top: compact ? 36 : 25, bottom: 174 };
-        const delay = Math.round(parameter * 20);
-        const curves = [
-            { name: 'Event', halfLife: 5, color: COLORS.red },
-            { name: 'Revision', halfLife: 15, color: COLORS.amber },
-            { name: 'Value', halfLife: 40, color: COLORS.teal }
+        const bounds = { left: compact ? 36 : 44, right: width - 12, top: 34, bottom: 150 };
+        const values = [
+            0.06, 0.08, 0.05, 0.09, 0.07, 0.11, 0.04, 0.08,
+            0.06, 0.10, 0.07, 0.05, 0.09, 0.06, 0.08, 0.04,
+            0.07, 0.06, 0.05, 0.03, 0.04, 0.02, 0.05, 0.01,
+            0.03, -0.01, 0.04, 0.02, 0.00, 0.03, 0.01, 0.02
         ];
+        const split = Math.round(map(parameter, 0, 1, 12, 24));
+        const researchMean = values.slice(0, split).reduce((sum, value) => sum + value, 0) / split;
+        const holdoutValues = values.slice(split);
+        const holdoutMean = holdoutValues.reduce((sum, value) => sum + value, 0) / holdoutValues.length;
+        const x = index => map(index, 0, values.length - 1, bounds.left, bounds.right);
+        const y = value => map(value, -0.02, 0.12, bounds.bottom, bounds.top);
+        const splitX = (x(split - 1) + x(split)) / 2;
 
-        [0, 50, 100].forEach(tick => {
-            const y = map(tick, 0, 100, bounds.bottom, bounds.top);
-            line(group, bounds.left, y, bounds.right, y, tick === 0 ? 'axis' : 'grid');
-            label(group, bounds.left - 6, y + 4, `${tick}%`, 'end');
-        });
-        [0, 20, 40, 60].forEach(tick => {
-            const x = map(tick, 0, 60, bounds.left, bounds.right);
-            label(group, x, 193, `${tick}d`);
-        });
-        label(group, bounds.left, 13, 'Signal remaining after publication', 'start', 'chart-note');
-
-        curves.forEach((curve, curveIndex) => {
-            const points = [];
-            for (let day = 0; day <= 60; day += 1) {
-                const remaining = 100 * Math.exp((-Math.log(2) * day) / curve.halfLife);
-                points.push({
-                    x: map(day, 0, 60, bounds.left, bounds.right),
-                    y: map(remaining, 0, 100, bounds.bottom, bounds.top)
-                });
-            }
-            add(group, 'path', {
-                d: pathFrom(points),
-                fill: 'none',
-                stroke: curve.color,
-                'stroke-width': 2.2,
-                'vector-effect': 'non-scaling-stroke',
-                class: 'mark'
-            });
-            const legendX = bounds.right - (compact ? 112 : 142) + curveIndex * (compact ? 38 : 48);
-            const legendY = compact ? 28 : 17;
-            add(group, 'line', {
-                x1: legendX,
-                y1: legendY,
-                x2: legendX + 12,
-                y2: legendY,
-                stroke: curve.color,
-                'stroke-width': 2,
-                'vector-effect': 'non-scaling-stroke'
-            });
-            label(group, legendX + 15, legendY + 3, compact ? curve.name.slice(0, 3) : curve.name, 'start');
-        });
-
-        const delayX = map(delay, 0, 60, bounds.left, bounds.right);
         add(group, 'rect', {
-            x: bounds.left,
+            x: splitX,
             y: bounds.top,
-            width: Math.max(0, delayX - bounds.left),
+            width: bounds.right - splitX,
             height: bounds.bottom - bounds.top,
-            fill: COLORS.ink,
-            opacity: 0.035
-        });
-        line(group, delayX, bounds.top, delayX, bounds.bottom, 'zero-line');
-        label(group, delayX + 5, bounds.top + 12, 'implementation', 'start');
-
-        curves.forEach(curve => {
-            const remaining = 100 * Math.exp((-Math.log(2) * delay) / curve.halfLife);
-            const y = map(remaining, 0, 100, bounds.bottom, bounds.top);
-            add(group, 'circle', {
-                cx: delayX,
-                cy: y,
-                r: 4,
-                fill: curve.color,
-                stroke: COLORS.cream,
-                'stroke-width': 1.5,
-                dataTip: `${curve.name} signal: ${remaining.toFixed(0)}% remains after ${delay} trading days`
-            });
-        });
-
-        const fastRemaining = 100 * Math.exp((-Math.log(2) * delay) / curves[0].halfLife);
-        return {
-            output: `${delay} trading ${delay === 1 ? 'day' : 'days'}`,
-            description: `Three illustrative alpha signals decay at different speeds. After an implementation delay of ${delay} trading days, the fast event signal retains ${fastRemaining.toFixed(0)} percent of its initial strength.`,
-            caption: `At a ${delay}-day delay, a fast event signal retains only ${fastRemaining.toFixed(0)}% of its initial strength; slower signals tolerate more patient execution.`,
-            interaction: { x0: bounds.left, x1: map(20, 0, 60, bounds.left, bounds.right) }
-        };
-    }
-
-    function drawPositionSizing(group, parameter) {
-        const compact = width < 410;
-        const bounds = { left: compact ? 38 : 46, right: width - 18, top: 24, bottom: 174 };
-        const securities = [
-            { name: 'A', alpha: -108, risk: 1.5, liquidity: 0.72, factor: -0.9 },
-            { name: 'B', alpha: -82, risk: 0.8, liquidity: 0.90, factor: -0.1 },
-            { name: 'C', alpha: -62, risk: 1.7, liquidity: 0.48, factor: 0.8 },
-            { name: 'D', alpha: -35, risk: 1.1, liquidity: 0.62, factor: -0.5 },
-            { name: 'E', alpha: -14, risk: 0.6, liquidity: 0.95, factor: 0.2 },
-            { name: 'F', alpha: 12, risk: 1.4, liquidity: 0.46, factor: 0.7 },
-            { name: 'G', alpha: 29, risk: 0.7, liquidity: 0.82, factor: -0.2 },
-            { name: 'H', alpha: 48, risk: 1.8, liquidity: 0.38, factor: 0.9 },
-            { name: 'I', alpha: 66, risk: 1.0, liquidity: 0.74, factor: 0.1 },
-            { name: 'J', alpha: 84, risk: 1.5, liquidity: 0.52, factor: -0.7 },
-            { name: 'K', alpha: 101, risk: 0.8, liquidity: 0.88, factor: 0.3 },
-            { name: 'L', alpha: 116, risk: 1.9, liquidity: 0.33, factor: 0.95 }
-        ];
-
-        const x = value => map(value, -120, 120, bounds.left, bounds.right);
-        const y = value => map(value, -4, 4, bounds.bottom, bounds.top);
-        add(group, 'rect', {
-            x: bounds.left,
-            y: y(2.5),
-            width: bounds.right - bounds.left,
-            height: y(-2.5) - y(2.5),
             fill: COLORS.teal,
-            opacity: 0.045
+            opacity: 0.055
         });
-        line(group, x(0), bounds.top, x(0), bounds.bottom, 'zero-line');
-        line(group, bounds.left, y(0), bounds.right, y(0), 'zero-line');
-        [-100, 0, 100].forEach(tick => label(group, x(tick), 193, signed(tick, 0, ' bps')));
-        [-4, -2, 0, 2, 4].forEach(tick => label(group, bounds.left - 6, y(tick) + 4, signed(tick, 0, '%'), 'end'));
-        label(group, bounds.left, 13, 'Expected residual return → active weight', 'start', 'chart-note');
-
-        let grossExposure = 0;
-        securities.forEach(security => {
-            const rawWeight = security.alpha / 30;
-            const constructedWeight = (security.alpha / 46) / (0.72 + 0.48 * security.risk)
-                - security.factor * 0.28;
-            const activeWeight = clamp(rawWeight * (1 - parameter) + constructedWeight * parameter, -4, 4);
-            grossExposure += Math.abs(activeWeight);
-            const color = security.factor < -0.3 ? COLORS.blue
-                : security.factor > 0.3 ? COLORS.amber : COLORS.teal;
-            const radius = 4 + security.liquidity * 4.5;
-            add(group, 'circle', {
-                cx: x(security.alpha),
-                cy: y(activeWeight),
-                r: radius,
-                fill: color,
-                opacity: 0.82,
-                stroke: COLORS.cream,
-                'stroke-width': 1.4,
-                class: 'mark',
-                dataTip: `${security.name}: forecast ${signed(security.alpha, 0, ' bps')}; active weight ${signed(activeWeight, 1, '%')}; ${security.liquidity > 0.7 ? 'higher' : 'lower'} liquidity`
-            });
+        [-0.02, 0, 0.05, 0.10].forEach(tick => {
+            const tickY = y(tick);
+            line(group, bounds.left, tickY, bounds.right, tickY, tick === 0 ? 'zero-line' : 'grid');
+            label(group, bounds.left - 6, tickY + 4, signed(tick, 2, ''), 'end');
         });
+        label(group, bounds.left, 13, compact ? 'Monthly rank IC' : 'Monthly cross-sectional rank IC', 'start', 'chart-note');
+        label(group, (bounds.left + splitX) / 2, 27,
+            `${compact ? 'IS' : 'Research'} ${signed(researchMean, 2, '')}`, 'middle', 'chart-note');
+        label(group, (splitX + bounds.right) / 2, 27,
+            `${compact ? 'OOS' : 'Holdout'} ${signed(holdoutMean, 2, '')}`, 'middle', 'chart-note');
 
-        const legendY = compact ? 205 : 204;
+        const researchPoints = values.slice(0, split).map((value, index) => ({ x: x(index), y: y(value) }));
+        const holdoutPoints = values.slice(split - 1).map((value, index) => ({ x: x(index + split - 1), y: y(value) }));
         [
-            { color: COLORS.blue, text: 'defensive tilt' },
-            { color: COLORS.teal, text: 'neutral' },
-            { color: COLORS.amber, text: 'cyclical tilt' }
-        ].forEach((item, index) => {
-            const start = compact ? 38 + index * 88 : width - 315 + index * 102;
-            add(group, 'circle', { cx: start, cy: legendY - 3, r: 3.5, fill: item.color });
-            label(group, start + 7, legendY, compact ? item.text.split(' ')[0] : item.text, 'start');
-        });
+            { points: researchPoints, color: COLORS.blue },
+            { points: holdoutPoints, color: COLORS.teal }
+        ].forEach(series => add(group, 'path', {
+            d: pathFrom(series.points),
+            fill: 'none',
+            stroke: series.color,
+            'stroke-width': 2,
+            'stroke-linejoin': 'round',
+            'stroke-linecap': 'round',
+            'vector-effect': 'non-scaling-stroke',
+            class: 'mark'
+        }));
+        values.forEach((value, index) => add(group, 'circle', {
+            cx: x(index),
+            cy: y(value),
+            r: compact ? 2.2 : 2.7,
+            fill: index < split ? COLORS.blue : COLORS.teal,
+            stroke: COLORS.cream,
+            'stroke-width': 1,
+            dataTip: `Month ${index + 1}: rank IC ${signed(value, 2, '')}; ${index < split ? 'research sample' : 'holdout sample'}`
+        }));
+        line(group, splitX, bounds.top, splitX, bounds.bottom, 'zero-line');
+        label(group, bounds.left, 168, 'M1', 'start');
+        label(group, splitX, 168, `M${split}`, 'middle');
+        label(group, bounds.right, 168, `M${values.length}`, 'end');
 
-        const state = parameter < 0.28 ? 'Raw conviction'
-            : parameter < 0.72 ? 'Risk-adjusted' : 'Fully constrained';
+        line(group, bounds.left, 179, bounds.right, 179, 'grid');
+        label(group, bounds.left, 198, compact ? 'Signal +1.00' : 'Target signal  +1.00', 'start', 'chart-note');
+        if (compact) {
+            label(group, bounds.right, 198, 'Controls  0.00', 'end', 'chart-note');
+        } else {
+            const controls = ['Market  0.00', 'Size  0.00', 'Value  0.00', 'Momentum  0.00'];
+            controls.forEach((textValue, index) => {
+                const controlX = map(index, 0, controls.length - 1, bounds.left + 170, bounds.right);
+                label(group, controlX, 198, textValue, index === controls.length - 1 ? 'end' : 'middle');
+            });
+        }
+
         return {
-            output: state,
-            description: `Illustrative expected residual returns are translated into active weights under ${state.toLowerCase()} portfolio construction. Bubble size represents liquidity and color represents a factor tilt.`,
-            caption: `The same research produces ${grossExposure.toFixed(1)}% gross active weight after risk, liquidity, and factor constraints reshape conviction.`,
+            output: `Month ${split}`,
+            description: `Monthly rank IC averages ${researchMean.toFixed(2)} in the research sample and ${holdoutMean.toFixed(2)} in the holdout. The factor-mimicking portfolio has exposure 1.00 to the signal and 0.00 to market, size, value, and momentum.`,
+            caption: `Mean IC is ${signed(researchMean, 2, '')} in research and ${signed(holdoutMean, 2, '')} in the holdout. Portfolio exposures are signal 1.00 and controls 0.00.`,
             interaction: { x0: bounds.left, x1: bounds.right }
         };
     }
@@ -384,8 +240,8 @@
 
         return {
             output: `${(averageCorrelation * 100).toFixed(0)}% average overlap`,
-            description: `An illustrative correlation matrix of eight research signals has ${effective.toFixed(1)} effective independent bets at ${(averageCorrelation * 100).toFixed(0)} percent average overlap.`,
-            caption: `Eight signals become roughly ${effective.toFixed(1)} independent bets once common information and correlated decisions are recognized.`,
+            description: `A correlation matrix of eight research signals has ${effective.toFixed(1)} effective independent bets at ${(averageCorrelation * 100).toFixed(0)} percent average overlap.`,
+            caption: `At ${(averageCorrelation * 100).toFixed(0)}% average overlap, eight signals provide about ${effective.toFixed(1)} independent bets.`,
             interaction: { x0: matrixX, x1: matrixX + matrixSize }
         };
     }
@@ -449,7 +305,7 @@
         return {
             output: `ρ = ${signed(correlation, 2, '')}`,
             description: `A portfolio with 60 percent of capital in equities has ${(equityRiskShare * 100).toFixed(0)} percent of risk attributed to equities at a stock-bond correlation of ${correlation.toFixed(2)}.`,
-            caption: `At this correlation, equities contribute ${(equityRiskShare * 100).toFixed(0)}% of portfolio risk despite receiving 60% of capital.`,
+            caption: `At this correlation, equities account for ${(equityRiskShare * 100).toFixed(0)}% of portfolio risk and 60% of capital.`,
             interaction: { x0: left, x1: right }
         };
     }
@@ -547,8 +403,8 @@
         return {
             output: growth > 0.18 ? 'Rising' : growth < -0.18 ? 'Falling' : 'Neutral',
             secondaryOutput: inflation > 0.18 ? 'Rising' : inflation < -0.18 ? 'Falling' : 'Neutral',
-            description: `An illustrative ${regime.toLowerCase()} regime produces a hypothetical portfolio return of ${signed(total, 1, '%')}, decomposed across equities, rates, credit, and real assets.`,
-            caption: `${regime}: correlated factor moves produce an illustrative portfolio result of ${signed(total, 1, '%')}. Drag the regime map to stress a different combination.`,
+            description: `The ${regime.toLowerCase()} scenario produces a sample portfolio return of ${signed(total, 1, '%')}, split across equities, rates, credit, and real assets.`,
+            caption: `${regime} scenario: portfolio return ${signed(total, 1, '%')}. Drag the point to change the growth and inflation surprises.`,
             interaction: {
                 x0: matrixX,
                 x1: matrixX + matrixSize,
@@ -561,32 +417,22 @@
 
     const scenes = [
         {
-            title: 'Does the signal travel?',
-            controlLabel: 'Evidence lens',
+            title: 'Factor-mimicking portfolio',
+            controlLabel: 'Holdout begins',
             render: drawSignalQuality
         },
         {
-            title: 'Alpha has a shelf life',
-            controlLabel: 'Implementation delay',
-            render: drawAlphaDecay
-        },
-        {
-            title: 'From conviction to position',
-            controlLabel: 'Construction discipline',
-            render: drawPositionSizing
-        },
-        {
-            title: 'Ten ideas—or three bets?',
+            title: 'Effective breadth',
             controlLabel: 'Signal overlap',
             render: drawEffectiveBreadth
         },
         {
-            title: 'Capital is not risk',
-            controlLabel: 'Stock–bond correlation',
+            title: 'Risk contribution',
+            controlLabel: 'Stock-bond correlation',
             render: drawRiskAllocation
         },
         {
-            title: 'What breaks the portfolio?',
+            title: 'Regime stress test',
             controlLabel: 'Growth surprise',
             secondaryLabel: 'Inflation surprise',
             render: drawRegimeStress

@@ -374,13 +374,6 @@
             display: none;
         }
 
-        .finance-disclosure {
-            margin-top: 9px;
-            color: #737b85;
-            font-size: 0.7rem;
-            line-height: 1.3;
-        }
-
         @media (max-width: 480px) {
             .card {
                 padding: 28px 24px;
@@ -458,12 +451,12 @@
         <section class="finance-lab" id="financeLab" aria-labelledby="financeTitle">
             <header class="finance-header">
                 <div>
-                    <p class="finance-kicker">Portfolio laboratory</p>
-                    <h2 class="finance-title" id="financeTitle">Does the signal travel?</h2>
+                    <p class="finance-kicker">Portfolio analytics</p>
+                    <h2 class="finance-title" id="financeTitle">Factor-mimicking portfolio</h2>
                 </div>
                 <div class="finance-transport" aria-label="Animation controls">
                     <button class="finance-button" type="button" data-action="previous" aria-label="Previous concept">←</button>
-                    <span class="finance-counter" id="financeCounter" aria-hidden="true">1 / 6</span>
+                    <span class="finance-counter" id="financeCounter" aria-hidden="true">1 / 4</span>
                     <button class="finance-button" type="button" data-action="next" aria-label="Next concept">→</button>
                     <button class="finance-button" type="button" data-action="play"
                         aria-label="Pause animation">Pause</button>
@@ -474,22 +467,22 @@
                 <div class="finance-stage" id="financeStage">
                     <svg class="finance-viz" id="financeViz" viewBox="0 0 616 210" role="img"
                         aria-labelledby="financeSvgTitle financeSvgDescription">
-                        <title id="financeSvgTitle">Does the signal travel?</title>
-                        <desc id="financeSvgDescription">Illustrative decile returns compare research evidence under different assumptions.</desc>
+                        <title id="financeSvgTitle">Factor-mimicking portfolio</title>
+                        <desc id="financeSvgDescription">Rolling rank IC is split between a research sample and a holdout sample. The portfolio has unit exposure to the signal and zero exposure to its control factors.</desc>
                         <g id="financePlot"></g>
                     </svg>
                     <div class="finance-tooltip" id="financeTooltip" role="tooltip" hidden></div>
                 </div>
                 <figcaption class="finance-caption" id="financeCaption">
-                    A useful signal should remain ordered after validation and implementation costs.
+                    Mean IC is compared before and after the holdout begins.
                 </figcaption>
             </figure>
 
             <div class="finance-parameter-grid" aria-label="Chart parameters">
                 <div class="finance-parameter">
-                    <label id="financeControlLabel" for="financeControl">Evidence lens</label>
-                    <input class="finance-range" id="financeControl" type="range" min="0" max="100" value="70">
-                    <output id="financeControlOutput" for="financeControl">Out-of-sample</output>
+                    <label id="financeControlLabel" for="financeControl">Holdout begins</label>
+                    <input class="finance-range" id="financeControl" type="range" min="0" max="100" value="65">
+                    <output id="financeControlOutput" for="financeControl">Month 20</output>
                 </div>
                 <div class="finance-parameter" id="financeSecondaryParameter" hidden>
                     <label id="financeSecondaryLabel" for="financeSecondaryControl">Inflation surprise</label>
@@ -500,14 +493,10 @@
 
             <nav class="finance-tabs" aria-label="Portfolio concepts">
                 <button class="finance-tab" type="button" data-scene="0" aria-current="true">Signal</button>
-                <button class="finance-tab" type="button" data-scene="1">Decay</button>
-                <button class="finance-tab" type="button" data-scene="2">Sizing</button>
-                <button class="finance-tab" type="button" data-scene="3">Breadth</button>
-                <button class="finance-tab" type="button" data-scene="4">Risk</button>
-                <button class="finance-tab" type="button" data-scene="5">Stress</button>
+                <button class="finance-tab" type="button" data-scene="1">Breadth</button>
+                <button class="finance-tab" type="button" data-scene="2">Risk</button>
+                <button class="finance-tab" type="button" data-scene="3">Stress</button>
             </nav>
-
-            <p class="finance-disclosure">Illustrative synthetic data. Concepts only—not investment advice.</p>
         </section>
     </main>
 
