@@ -1,25 +1,29 @@
 (function () {
     const canvas = document.getElementById('financeCanvas');
+    if (!canvas) return;
+
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
     const DISPLAY_TIME = 4000;
     const FADE_TIME = 1800;
     const DARK = '#0a1628';
     const GRAY = '#9ca3af';
-    const MUTED = '#6b7280';
+    const MUTED = '#626a75';
     const SERIF = '"Times New Roman", Georgia, serif';
-    const SANS = 'Calibri, sans-serif';
+    const SANS = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    let pixelRatio = 1;
 
     function resize() {
         const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width * devicePixelRatio;
-        canvas.height = rect.height * devicePixelRatio;
-        ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+        pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.max(1, Math.round(rect.width * pixelRatio));
+        canvas.height = Math.max(1, Math.round(rect.height * pixelRatio));
+        ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     }
-    resize();
-    window.addEventListener('resize', resize);
 
-    const w = () => canvas.width / devicePixelRatio;
-    const h = () => canvas.height / devicePixelRatio;
+    const w = () => canvas.width / pixelRatio;
+    const h = () => canvas.height / pixelRatio;
 
     function drawAxes(xLabel, yLabel) {
         const compact = w() < 360;
@@ -243,8 +247,6 @@
         returns.sort((a, bv) => a - bv);
 
         const cutoff = Math.ceil(nSims * 0.05);
-        const varLevel = returns[cutoff - 1];
-
         const yMin = Math.min(...returns) * 1.15;
         const yMax = Math.max(...returns) * 1.15;
         const yRange = yMax - yMin;
@@ -820,38 +822,72 @@
         drawActiveReturn, drawProportionalWeight, drawAlphaDecayCurve,
         drawActiveRiskCurve
     ];
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
     let current = 0;
-    let cycleStart = performance.now();
+    let fadeStart = 0;
+    let frameId = null;
+    let cycleTimer = null;
 
-    function render(now) {
-        const elapsed = now - cycleStart;
-        const totalCycle = DISPLAY_TIME + FADE_TIME;
-
-        if (elapsed >= totalCycle) {
-            current = (current + 1) % scenes.length;
-            cycleStart = now;
-        }
-
-        const pos = now - cycleStart;
+    function clearCanvas() {
         ctx.clearRect(0, 0, w(), h());
-
-        if (pos >= DISPLAY_TIME) {
-            const t = (pos - DISPLAY_TIME) / FADE_TIME;
-            const next = (current + 1) % scenes.length;
-            ctx.save();
-            ctx.globalAlpha = 1 - t;
-            scenes[current]();
-            ctx.restore();
-            ctx.save();
-            ctx.globalAlpha = t;
-            scenes[next]();
-            ctx.restore();
-        } else {
-            scenes[current]();
-        }
-
-        requestAnimationFrame(render);
     }
 
-    requestAnimationFrame(render);
+    function drawCurrent() {
+        clearCanvas();
+        scenes[current]();
+    }
+
+    function stopAnimation() {
+        if (frameId !== null) cancelAnimationFrame(frameId);
+        if (cycleTimer !== null) clearTimeout(cycleTimer);
+        frameId = null;
+        cycleTimer = null;
+    }
+
+    function scheduleNextScene() {
+        if (motionPreference.matches || document.hidden) return;
+        cycleTimer = window.setTimeout(() => {
+            cycleTimer = null;
+            fadeStart = performance.now();
+            frameId = requestAnimationFrame(renderFade);
+        }, DISPLAY_TIME);
+    }
+
+    function renderFade(now) {
+        const t = Math.min(1, (now - fadeStart) / FADE_TIME);
+        const next = (current + 1) % scenes.length;
+
+        clearCanvas();
+        ctx.save();
+        ctx.globalAlpha = 1 - t;
+        scenes[current]();
+        ctx.restore();
+        ctx.save();
+        ctx.globalAlpha = t;
+        scenes[next]();
+        ctx.restore();
+
+        if (t < 1) {
+            frameId = requestAnimationFrame(renderFade);
+            return;
+        }
+
+        frameId = null;
+        current = next;
+        drawCurrent();
+        scheduleNextScene();
+    }
+
+    function restartAnimation() {
+        stopAnimation();
+        resize();
+        drawCurrent();
+        scheduleNextScene();
+    }
+
+    window.addEventListener('resize', restartAnimation, { passive: true });
+    document.addEventListener('visibilitychange', restartAnimation);
+    motionPreference.addEventListener('change', restartAnimation);
+
+    restartAnimation();
 })();

@@ -5,11 +5,22 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Kemal Kongar, Portfolio Analyst @ Select Equity Group">
+    <meta name="theme-color" content="#0a1628">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
 
     <title>Kemal Kongar</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180x180.png">
+    <link rel="canonical" href="https://www.kemalkongar.com/">
+    <meta property="og:type" content="profile">
+    <meta property="og:title" content="Kemal Kongar">
+    <meta property="og:description" content="Kemal Kongar, Portfolio Analyst @ Select Equity Group">
+    <meta property="og:url" content="https://www.kemalkongar.com/">
+    <meta property="og:site_name" content="Kemal Kongar">
+
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180x180.png">
     <link rel="manifest" href="/site.webmanifest">
     <style>
         * {
@@ -18,9 +29,8 @@
             box-sizing: border-box;
         }
 
-        html,
-        body {
-            height: 100%;
+        html {
+            min-height: 100%;
         }
 
         body {
@@ -28,7 +38,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: Calibri, Aptos, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            min-height: 100svh;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             padding: 20px;
         }
 
@@ -68,6 +80,12 @@
             text-decoration-color: #5a6070;
         }
 
+        a:focus-visible {
+            border-radius: 2px;
+            outline: 2px solid #0a1628;
+            outline-offset: 4px;
+        }
+
         .divider {
             border: none;
             border-top: 1.5px solid #0a1628;
@@ -86,7 +104,7 @@
 
         p {
             color: #1f2937;
-            font-size: 0.95rem;
+            font-size: 1rem;
             line-height: 1.65;
         }
 
@@ -100,9 +118,8 @@
         .links a {
             color: #0a1628;
             text-decoration: none;
-            font-size: 0.95rem;
+            font-size: 1rem;
             font-weight: 500;
-            transition: opacity 0.2s;
         }
 
         .links a:hover {
@@ -129,16 +146,22 @@
                 height: 130px;
             }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            .subtle-link {
+                transition: none;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <div class="card">
+    <main class="card">
         <h1>Kemal Kongar</h1>
         <p class="title">Portfolio Analyst @ <a href="https://www.selectequity.com/" target="_blank"
-                class="subtle-link">Select Equity Group</a></p>
+                rel="noopener" class="subtle-link">Select Equity Group</a></p>
 
-        <div class="divider"></div>
+        <hr class="divider">
 
         <h2>About</h2>
         <p>
@@ -146,17 +169,17 @@
             2021 and hold a Bachelor's degree in Computer Science and Political Science from McGill University.
         </p>
 
-        <div class="divider"></div>
+        <hr class="divider">
 
-        <div class="links">
-            <a href="https://www.linkedin.com/in/kemalkongar" target="_blank">LinkedIn</a>
-            <span class="sep">&middot;</span>
+        <nav class="links" aria-label="Contact">
+            <a href="https://www.linkedin.com/in/kemalkongar" target="_blank" rel="noopener">LinkedIn</a>
+            <span class="sep" aria-hidden="true">&middot;</span>
             <a href="mailto:contact@kemalkongar.com">Email</a>
-        </div>
+        </nav>
 
-        <div class="divider"></div>
-        <canvas class="finance-canvas" id="financeCanvas"></canvas>
-    </div>
+        <hr class="divider">
+        <canvas class="finance-canvas" id="financeCanvas" aria-hidden="true"></canvas>
+    </main>
 
     <script src="canvas.js"></script>
 </body>
