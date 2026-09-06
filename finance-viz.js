@@ -105,7 +105,7 @@
 
     function drawSignalQuality(group, parameter) {
         const compact = width < 410;
-        const bounds = { left: compact ? 36 : 44, right: width - 12, top: 34, bottom: 150 };
+        const bounds = { left: compact ? 36 : 44, right: width - 12, top: 34, bottom: 174 };
         const values = [
             0.06, 0.08, 0.05, 0.09, 0.07, 0.11, 0.04, 0.08,
             0.06, 0.10, 0.07, 0.05, 0.09, 0.06, 0.08, 0.04,
@@ -164,27 +164,14 @@
             dataTip: `Month ${index + 1}: rank IC ${signed(value, 2, '')}; ${index < split ? 'in-sample' : 'out-of-sample'}`
         }));
         line(group, splitX, bounds.top, splitX, bounds.bottom, 'zero-line');
-        label(group, bounds.left, 168, 'M1', 'start');
-        label(group, splitX, 168, `M${split}`, 'middle');
-        label(group, bounds.right, 168, `M${values.length}`, 'end');
-
-        line(group, bounds.left, 179, bounds.right, 179, 'grid');
-        if (compact) {
-            label(group, bounds.left, 198, 'Signal +1.00', 'start', 'chart-note');
-            label(group, bounds.right, 198, 'Controls  0.00', 'end', 'chart-note');
-        } else {
-            const exposures = ['Target signal  +1.00', 'Market  0.00', 'Size  0.00', 'Value  0.00', 'Momentum  0.00'];
-            exposures.forEach((textValue, index) => {
-                const exposureX = map(index, 0, exposures.length - 1, bounds.left, bounds.right);
-                const anchor = index === 0 ? 'start' : index === exposures.length - 1 ? 'end' : 'middle';
-                label(group, exposureX, 198, textValue, anchor, index === 0 ? 'chart-note' : 'chart-label');
-            });
-        }
+        label(group, bounds.left, 192, 'M1', 'start');
+        label(group, splitX, 192, `M${split}`, 'middle');
+        label(group, bounds.right, 192, `M${values.length}`, 'end');
 
         return {
             output: `Month ${split}`,
-            description: `Monthly rank IC averages ${inSampleMean.toFixed(2)} in-sample and ${outSampleMean.toFixed(2)} out-of-sample. The factor-mimicking portfolio has exposure 1.00 to the signal and 0.00 to market, size, value, and momentum.`,
-            caption: `Mean IC is ${signed(inSampleMean, 2, '')} in-sample and ${signed(outSampleMean, 2, '')} out-of-sample. Portfolio exposures are signal 1.00 and controls 0.00.`,
+            description: `Monthly rank IC averages ${inSampleMean.toFixed(2)} in-sample and ${outSampleMean.toFixed(2)} out-of-sample.`,
+            caption: `Mean IC is ${signed(inSampleMean, 2, '')} in-sample and ${signed(outSampleMean, 2, '')} out-of-sample.`,
             interaction: { x0: bounds.left, x1: bounds.right }
         };
     }
