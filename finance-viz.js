@@ -111,9 +111,9 @@
             0.03, -0.01, 0.04, 0.02, 0.00, 0.03, 0.01, 0.02
         ];
         const split = Math.round(map(parameter, 0, 1, 12, 24));
-        const researchMean = values.slice(0, split).reduce((sum, value) => sum + value, 0) / split;
-        const holdoutValues = values.slice(split);
-        const holdoutMean = holdoutValues.reduce((sum, value) => sum + value, 0) / holdoutValues.length;
+        const inSampleMean = values.slice(0, split).reduce((sum, value) => sum + value, 0) / split;
+        const outSampleValues = values.slice(split);
+        const outSampleMean = outSampleValues.reduce((sum, value) => sum + value, 0) / outSampleValues.length;
         const x = index => map(index, 0, values.length - 1, bounds.left, bounds.right);
         const y = value => map(value, -0.02, 0.12, bounds.bottom, bounds.top);
         const splitX = (x(split - 1) + x(split)) / 2;
@@ -133,9 +133,9 @@
         });
         label(group, bounds.left, 13, compact ? 'Monthly rank IC' : 'Monthly cross-sectional rank IC', 'start', 'chart-note');
         label(group, (bounds.left + splitX) / 2, 27,
-            `${compact ? 'IS' : 'Research'} ${signed(researchMean, 2, '')}`, 'middle', 'chart-note');
+            `${compact ? 'IS' : 'In-sample'} ${signed(inSampleMean, 2, '')}`, 'middle', 'chart-note');
         label(group, (splitX + bounds.right) / 2, 27,
-            `${compact ? 'OOS' : 'Holdout'} ${signed(holdoutMean, 2, '')}`, 'middle', 'chart-note');
+            `${compact ? 'OOS' : 'Out-of-sample'} ${signed(outSampleMean, 2, '')}`, 'middle', 'chart-note');
 
         const researchPoints = values.slice(0, split).map((value, index) => ({ x: x(index), y: y(value) }));
         const holdoutPoints = values.slice(split - 1).map((value, index) => ({ x: x(index + split - 1), y: y(value) }));
@@ -159,7 +159,7 @@
             fill: index < split ? COLORS.blue : COLORS.teal,
             stroke: COLORS.cream,
             'stroke-width': 1,
-            dataTip: `Month ${index + 1}: rank IC ${signed(value, 2, '')}; ${index < split ? 'research sample' : 'holdout sample'}`
+            dataTip: `Month ${index + 1}: rank IC ${signed(value, 2, '')}; ${index < split ? 'in-sample' : 'out-of-sample'}`
         }));
         line(group, splitX, bounds.top, splitX, bounds.bottom, 'zero-line');
         label(group, bounds.left, 168, 'M1', 'start');
@@ -180,8 +180,8 @@
 
         return {
             output: `Month ${split}`,
-            description: `Monthly rank IC averages ${researchMean.toFixed(2)} in the research sample and ${holdoutMean.toFixed(2)} in the holdout. The factor-mimicking portfolio has exposure 1.00 to the signal and 0.00 to market, size, value, and momentum.`,
-            caption: `Mean IC is ${signed(researchMean, 2, '')} in research and ${signed(holdoutMean, 2, '')} in the holdout. Portfolio exposures are signal 1.00 and controls 0.00.`,
+            description: `Monthly rank IC averages ${inSampleMean.toFixed(2)} in-sample and ${outSampleMean.toFixed(2)} out-of-sample. The factor-mimicking portfolio has exposure 1.00 to the signal and 0.00 to market, size, value, and momentum.`,
+            caption: `Mean IC is ${signed(inSampleMean, 2, '')} in-sample and ${signed(outSampleMean, 2, '')} out-of-sample. Portfolio exposures are signal 1.00 and controls 0.00.`,
             interaction: { x0: bounds.left, x1: bounds.right }
         };
     }
@@ -189,13 +189,14 @@
     function drawEffectiveBreadth(group, parameter) {
         const compact = width < 410;
         const count = 8;
-        const matrixSize = compact ? Math.min(145, width * 0.47) : 158;
-        const matrixX = compact ? 27 : 42;
-        const matrixY = 27;
+        const matrixSize = compact ? Math.min(132, width * 0.46) : 136;
+        const matrixX = compact ? 36 : 62;
+        const matrixY = 54;
         const cell = matrixSize / count;
         const clusters = [0, 0, 1, 1, 1, 2, 2, 3];
-        const names = compact ? ['V', 'Q', 'M', 'R', 'E', 'A', 'F', 'S']
-            : ['Val', 'Qual', 'Mom', 'Rev', 'Est', 'Alt', 'Flow', 'Sent'];
+        const names = ['Value', 'Quality', 'Momentum', 'Revisions', 'Estimates', 'Alt data', 'Flows', 'Sentiment'];
+        const rowNames = compact ? ['Val', 'Qual', 'Mom', 'Rev', 'Est', 'Alt', 'Flow', 'Sent'] : names;
+        const columnNames = ['Val', 'Qual', 'Mom', 'Rev', 'Est', 'Alt', 'Flow', 'Sent'];
         let correlationTotal = 0;
         let pairs = 0;
 
@@ -219,93 +220,103 @@
                         : `${names[row]} / ${names[column]} overlap: ${(rho * 100).toFixed(0)}%`
                 });
             }
-            label(group, matrixX - 5, matrixY + row * cell + cell * 0.7, names[row], 'end');
-            label(group, matrixX + row * cell + cell * 0.5, matrixY - 6, names[row], 'middle');
+            label(group, matrixX - 5, matrixY + row * cell + cell * 0.7, rowNames[row], 'end');
         }
+        columnNames.forEach((name, column) => {
+            const columnX = matrixX + column * cell + cell * 0.5;
+            const columnY = matrixY - 7;
+            const columnLabel = label(group, columnX, columnY, name, 'end');
+            columnLabel.setAttribute('transform', `rotate(-52 ${columnX} ${columnY})`);
+        });
 
         const averageCorrelation = correlationTotal / pairs;
         const effective = count / (1 + (count - 1) * averageCorrelation);
-        const summaryX = matrixX + matrixSize + (compact ? 18 : 34);
+        const summaryX = matrixX + matrixSize + (compact ? 16 : 34);
         const summaryRight = width - 16;
         const barWidth = Math.max(45, summaryRight - summaryX);
         const effectiveWidth = barWidth * (effective / count);
-        label(group, summaryX, 42, 'Signals counted', 'start', 'chart-note');
-        add(group, 'rect', { x: summaryX, y: 52, width: barWidth, height: 18, rx: 2, fill: COLORS.blueLight });
-        label(group, summaryRight - 5, 66, `${count}`, 'end', 'chart-value');
-        label(group, summaryX, 102, 'Independent bets', 'start', 'chart-note');
-        add(group, 'rect', { x: summaryX, y: 112, width: barWidth, height: 18, rx: 2, fill: COLORS.ink, opacity: 0.09 });
-        add(group, 'rect', { x: summaryX, y: 112, width: effectiveWidth, height: 18, rx: 2, fill: COLORS.teal });
-        label(group, summaryRight - 5, 126, effective.toFixed(1), 'end', 'chart-value');
-        label(group, summaryX, 158, compact ? 'Overlap reduces breadth' : 'More rows do not guarantee more breadth', 'start');
+        label(group, summaryX, 62, 'Signals counted', 'start', 'chart-note');
+        add(group, 'rect', { x: summaryX, y: 72, width: barWidth, height: 18, rx: 2, fill: COLORS.blueLight });
+        label(group, summaryRight - 5, 86, `${count}`, 'end', 'chart-value');
+        label(group, summaryX, 122, 'Independent bets', 'start', 'chart-note');
+        add(group, 'rect', { x: summaryX, y: 132, width: barWidth, height: 18, rx: 2, fill: COLORS.ink, opacity: 0.09 });
+        add(group, 'rect', { x: summaryX, y: 132, width: effectiveWidth, height: 18, rx: 2, fill: COLORS.teal });
+        label(group, summaryRight - 5, 146, effective.toFixed(1), 'end', 'chart-value');
+        label(group, summaryX, 178, compact ? 'Overlap reduces breadth' : 'More rows do not guarantee more breadth', 'start');
 
         return {
             output: `${(averageCorrelation * 100).toFixed(0)}% average overlap`,
-            description: `A correlation matrix of eight research signals has ${effective.toFixed(1)} effective independent bets at ${(averageCorrelation * 100).toFixed(0)} percent average overlap.`,
-            caption: `At ${(averageCorrelation * 100).toFixed(0)}% average overlap, eight signals provide about ${effective.toFixed(1)} independent bets.`,
+            description: `A correlation matrix of value, quality, momentum, revisions, estimates, alternative data, flows, and sentiment has ${effective.toFixed(1)} effective independent bets at ${(averageCorrelation * 100).toFixed(0)} percent average overlap.`,
+            caption: `At ${(averageCorrelation * 100).toFixed(0)}% average overlap, these eight signals provide about ${effective.toFixed(1)} independent bets.`,
             interaction: { x0: matrixX, x1: matrixX + matrixSize }
         };
     }
 
     function drawRiskAllocation(group, parameter) {
         const compact = width < 410;
-        const correlation = -0.15 + parameter * 0.8;
-        const equityWeight = 0.6;
-        const bondWeight = 0.4;
-        const equityVolatility = 0.15;
-        const bondVolatility = 0.05;
-        const covariance = correlation * equityVolatility * bondVolatility;
-        const equityContribution = equityWeight * (
-            equityWeight * equityVolatility * equityVolatility + bondWeight * covariance
-        );
-        const bondContribution = bondWeight * (
-            bondWeight * bondVolatility * bondVolatility + equityWeight * covariance
-        );
-        const portfolioVariance = equityContribution + bondContribution;
-        const equityRiskShare = clamp(equityContribution / portfolioVariance, 0, 1);
-        const bondRiskShare = 1 - equityRiskShare;
-        const portfolioVolatility = Math.sqrt(portfolioVariance) * 100;
-        const left = compact ? 58 : 78;
+        const concentration = parameter;
+        const activeRisk = 3.2 + concentration * 1.8;
+        const sources = [
+            { name: 'Style', compactName: 'Style', share: 0.24 + concentration * 0.16, color: COLORS.teal, drivers: 'Value, Momentum, Quality' },
+            { name: 'Industry', compactName: 'Ind.', share: 0.18 + concentration * 0.14, color: COLORS.blue, drivers: 'Technology, Financials, Energy' },
+            { name: 'Country', compactName: 'Ctry', share: 0.10 + concentration * 0.10, color: COLORS.amber, drivers: 'United States, Japan, United Kingdom' },
+            { name: 'Idiosyncratic', compactName: 'Idio', share: 0, color: COLORS.red, drivers: 'Stock-specific residual risk' }
+        ];
+        sources[3].share = 1 - sources.slice(0, 3).reduce((sum, source) => sum + source.share, 0);
+        const left = compact ? 14 : 42;
         const right = width - 18;
         const fullWidth = right - left;
+        const barLeft = compact ? 72 : 118;
+        const barRight = compact ? width - 52 : 372;
+        const barWidth = barRight - barLeft;
 
-        label(group, left, 24, 'A 60 / 40 portfolio, viewed two ways', 'start', 'chart-note');
-        const bars = [
-            { y: 55, name: 'Capital', equity: 0.6, bonds: 0.4 },
-            { y: 118, name: 'Risk', equity: equityRiskShare, bonds: bondRiskShare }
-        ];
-        bars.forEach(bar => {
-            label(group, left - 9, bar.y + 22, bar.name, 'end', 'chart-note');
+        label(group, left, 15, 'Equity portfolio active risk', 'start', 'chart-note');
+        label(group, right, 15, `${activeRisk.toFixed(1)}%`, 'end', 'chart-value');
+        let segmentX = left;
+        sources.forEach(source => {
+            const segmentWidth = fullWidth * source.share;
             add(group, 'rect', {
-                x: left,
-                y: bar.y,
-                width: fullWidth * bar.equity,
-                height: 34,
+                x: segmentX,
+                y: 28,
+                width: segmentWidth,
+                height: 26,
                 rx: 2,
-                fill: COLORS.teal,
-                dataTip: `Equities: ${(bar.equity * 100).toFixed(0)}% of ${bar.name.toLowerCase()}`
+                fill: source.color,
+                dataTip: `${source.name}: ${(source.share * 100).toFixed(0)}% of active risk. Drivers: ${source.drivers}.`
             });
-            add(group, 'rect', {
-                x: left + fullWidth * bar.equity,
-                y: bar.y,
-                width: fullWidth * bar.bonds,
-                height: 34,
-                rx: 2,
-                fill: COLORS.blue,
-                dataTip: `Bonds: ${(bar.bonds * 100).toFixed(0)}% of ${bar.name.toLowerCase()}`
-            });
-            if (bar.equity > 0.15) label(group, left + fullWidth * bar.equity / 2, bar.y + 22, `${(bar.equity * 100).toFixed(0)}%`, 'middle', 'chart-on-color');
-            if (bar.bonds > 0.15) label(group, left + fullWidth * (bar.equity + bar.bonds / 2), bar.y + 22, `${(bar.bonds * 100).toFixed(0)}%`, 'middle', 'chart-on-color');
+            const segmentLabel = compact ? source.compactName : source.name;
+            if (segmentWidth > (compact ? 34 : 44)) {
+                label(group, segmentX + segmentWidth / 2, 45, segmentLabel, 'middle', 'chart-on-color');
+            }
+            segmentX += segmentWidth;
         });
-        add(group, 'rect', { x: left, y: 177, width: 10, height: 10, rx: 1, fill: COLORS.teal });
-        label(group, left + 15, 186, 'Equities', 'start');
-        add(group, 'rect', { x: left + 82, y: 177, width: 10, height: 10, rx: 1, fill: COLORS.blue });
-        label(group, left + 97, 186, 'Bonds', 'start');
-        label(group, right, compact ? 205 : 186, `Portfolio volatility ${portfolioVolatility.toFixed(1)}%`, 'end', 'chart-value');
+        label(group, left, 72, 'Share of active risk', 'start', 'chart-note');
+
+        sources.forEach((source, index) => {
+            const y = 84 + index * 28;
+            const shareWidth = barWidth * source.share;
+            label(group, compact ? 64 : 106, y + 10, compact ? source.compactName : source.name, 'end', 'chart-note');
+            add(group, 'rect', { x: barLeft, y, width: barWidth, height: 14, rx: 2, fill: COLORS.ink, opacity: 0.08 });
+            add(group, 'rect', {
+                x: barLeft,
+                y,
+                width: shareWidth,
+                height: 14,
+                rx: 2,
+                fill: source.color,
+                opacity: 0.88,
+                dataTip: `${source.name}: ${(source.share * 100).toFixed(0)}% of active risk. Drivers: ${source.drivers}.`
+            });
+            label(group, barRight + 7, y + 10, `${(source.share * 100).toFixed(0)}%`, 'start', 'chart-note');
+            if (!compact) label(group, 406, y + 10, source.drivers, 'start');
+        });
+
+        const state = concentration < 0.34 ? 'Diversified' : concentration < 0.68 ? 'Balanced' : 'Concentrated';
 
         return {
-            output: `ρ = ${signed(correlation, 2, '')}`,
-            description: `A portfolio with 60 percent of capital in equities has ${(equityRiskShare * 100).toFixed(0)} percent of risk attributed to equities at a stock-bond correlation of ${correlation.toFixed(2)}.`,
-            caption: `At this correlation, equities account for ${(equityRiskShare * 100).toFixed(0)}% of portfolio risk and 60% of capital.`,
+            output: state,
+            description: `An equity portfolio has ${activeRisk.toFixed(1)} percent active risk. Its risk sources are ${(sources[0].share * 100).toFixed(0)} percent style, ${(sources[1].share * 100).toFixed(0)} percent industry, ${(sources[2].share * 100).toFixed(0)} percent country, and ${(sources[3].share * 100).toFixed(0)} percent idiosyncratic.`,
+            caption: `Active risk is ${activeRisk.toFixed(1)}%. Style, industry, country, and stock-specific exposures contribute ${(sources[0].share * 100).toFixed(0)}%, ${(sources[1].share * 100).toFixed(0)}%, ${(sources[2].share * 100).toFixed(0)}%, and ${(sources[3].share * 100).toFixed(0)}%.`,
             interaction: { x0: left, x1: right }
         };
     }
@@ -428,7 +439,7 @@
         },
         {
             title: 'Risk contribution',
-            controlLabel: 'Stock-bond correlation',
+            controlLabel: 'Active concentration',
             render: drawRiskAllocation
         },
         {
