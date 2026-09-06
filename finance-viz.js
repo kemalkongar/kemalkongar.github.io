@@ -29,7 +29,6 @@
     const COLORS = {
         ink: '#0a1628',
         muted: '#626a75',
-        axis: '#9ca3af',
         teal: '#2f7e7a',
         tealLight: '#a9cfca',
         amber: '#b57a2b',
@@ -66,12 +65,15 @@
         return `${value > 0 ? '+' : ''}${rounded}${suffix || ''}`;
     }
 
+    function mean(values) {
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+
     function make(tag, attributes, textValue) {
         const node = document.createElementNS(NS, tag);
         Object.entries(attributes || {}).forEach(([key, value]) => {
             if (value === undefined || value === null) return;
             if (key === 'dataTip') node.dataset.tip = value;
-            else if (key === 'dataRegimeSurface') node.dataset.regimeSurface = value;
             else node.setAttribute(key, String(value));
         });
         if (textValue !== undefined) node.textContent = textValue;
@@ -111,9 +113,9 @@
             0.03, -0.01, 0.04, 0.02, 0.00, 0.03, 0.01, 0.02
         ];
         const split = Math.round(map(parameter, 0, 1, 12, 24));
-        const inSampleMean = values.slice(0, split).reduce((sum, value) => sum + value, 0) / split;
+        const inSampleMean = mean(values.slice(0, split));
         const outSampleValues = values.slice(split);
-        const outSampleMean = outSampleValues.reduce((sum, value) => sum + value, 0) / outSampleValues.length;
+        const outSampleMean = mean(outSampleValues);
         const x = index => map(index, 0, values.length - 1, bounds.left, bounds.right);
         const y = value => map(value, -0.02, 0.12, bounds.bottom, bounds.top);
         const splitX = (x(split - 1) + x(split)) / 2;
@@ -137,11 +139,11 @@
         label(group, (splitX + bounds.right) / 2, 27,
             `${compact ? 'OOS' : 'Out-of-sample'} ${signed(outSampleMean, 2, '')}`, 'middle', 'chart-note');
 
-        const researchPoints = values.slice(0, split).map((value, index) => ({ x: x(index), y: y(value) }));
-        const holdoutPoints = values.slice(split - 1).map((value, index) => ({ x: x(index + split - 1), y: y(value) }));
+        const inSamplePoints = values.slice(0, split).map((value, index) => ({ x: x(index), y: y(value) }));
+        const outSamplePoints = values.slice(split - 1).map((value, index) => ({ x: x(index + split - 1), y: y(value) }));
         [
-            { points: researchPoints, color: COLORS.blue },
-            { points: holdoutPoints, color: COLORS.teal }
+            { points: inSamplePoints, color: COLORS.blue },
+            { points: outSamplePoints, color: COLORS.teal }
         ].forEach(series => add(group, 'path', {
             d: pathFrom(series.points),
             fill: 'none',
@@ -167,14 +169,15 @@
         label(group, bounds.right, 168, `M${values.length}`, 'end');
 
         line(group, bounds.left, 179, bounds.right, 179, 'grid');
-        label(group, bounds.left, 198, compact ? 'Signal +1.00' : 'Target signal  +1.00', 'start', 'chart-note');
         if (compact) {
+            label(group, bounds.left, 198, 'Signal +1.00', 'start', 'chart-note');
             label(group, bounds.right, 198, 'Controls  0.00', 'end', 'chart-note');
         } else {
-            const controls = ['Market  0.00', 'Size  0.00', 'Value  0.00', 'Momentum  0.00'];
-            controls.forEach((textValue, index) => {
-                const controlX = map(index, 0, controls.length - 1, bounds.left + 170, bounds.right);
-                label(group, controlX, 198, textValue, index === controls.length - 1 ? 'end' : 'middle');
+            const exposures = ['Target signal  +1.00', 'Market  0.00', 'Size  0.00', 'Value  0.00', 'Momentum  0.00'];
+            exposures.forEach((textValue, index) => {
+                const exposureX = map(index, 0, exposures.length - 1, bounds.left, bounds.right);
+                const anchor = index === 0 ? 'start' : index === exposures.length - 1 ? 'end' : 'middle';
+                label(group, exposureX, 198, textValue, anchor, index === 0 ? 'chart-note' : 'chart-label');
             });
         }
 
@@ -191,7 +194,7 @@
         const count = 8;
         const matrixSize = compact ? Math.min(132, width * 0.46) : 136;
         const matrixX = compact ? 36 : 62;
-        const matrixY = 54;
+        const matrixY = 64;
         const cell = matrixSize / count;
         const clusters = [0, 0, 1, 1, 1, 2, 2, 3];
         const names = ['Value', 'Quality', 'Momentum', 'Revisions', 'Estimates', 'Alt data', 'Flows', 'Sentiment'];
@@ -224,7 +227,7 @@
         }
         columnNames.forEach((name, column) => {
             const columnX = matrixX + column * cell + cell * 0.5;
-            const columnY = matrixY - 7;
+            const columnY = 48;
             const columnLabel = label(group, columnX, columnY, name, 'end');
             columnLabel.setAttribute('transform', `rotate(-52 ${columnX} ${columnY})`);
         });
@@ -245,9 +248,9 @@
         label(group, summaryX, 178, compact ? 'Overlap reduces breadth' : 'More rows do not guarantee more breadth', 'start');
 
         return {
-            output: `${(averageCorrelation * 100).toFixed(0)}% average overlap`,
-            description: `A correlation matrix of value, quality, momentum, revisions, estimates, alternative data, flows, and sentiment has ${effective.toFixed(1)} effective independent bets at ${(averageCorrelation * 100).toFixed(0)} percent average overlap.`,
-            caption: `At ${(averageCorrelation * 100).toFixed(0)}% average overlap, these eight signals provide about ${effective.toFixed(1)} independent bets.`,
+            output: `${(averageCorrelation * 100).toFixed(0)}%`,
+            description: `A correlation matrix of value, quality, momentum, revisions, estimates, alternative data, flows, and sentiment has ${effective.toFixed(1)} effective independent bets at a mean pairwise correlation of ${(averageCorrelation * 100).toFixed(0)} percent.`,
+            caption: `At a mean pairwise correlation of ${(averageCorrelation * 100).toFixed(0)}%, these eight signals provide about ${effective.toFixed(1)} independent bets.`,
             interaction: { x0: matrixX, x1: matrixX + matrixSize }
         };
     }
@@ -368,8 +371,7 @@
             y: matrixY,
             width: matrixSize,
             height: matrixSize,
-            fill: 'transparent',
-            dataRegimeSurface: 'true'
+            fill: 'transparent'
         });
         const pointX = map(growth, -1, 1, matrixX, matrixX + matrixSize);
         const pointY = map(inflation, -1, 1, matrixY + matrixSize, matrixY);
@@ -429,12 +431,12 @@
     const scenes = [
         {
             title: 'Factor-mimicking portfolio',
-            controlLabel: 'Holdout begins',
+            controlLabel: 'Out-of-sample begins',
             render: drawSignalQuality
         },
         {
             title: 'Effective breadth',
-            controlLabel: 'Signal overlap',
+            controlLabel: 'Mean pairwise correlation',
             render: drawEffectiveBreadth
         },
         {
