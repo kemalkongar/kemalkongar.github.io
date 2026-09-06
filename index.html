@@ -162,6 +162,9 @@
         }
 
         .finance-title {
+            display: -webkit-box;
+            height: 1.25em;
+            overflow: hidden;
             margin: 3px 0 0;
             color: #0a1628;
             font-size: 1.1rem;
@@ -169,6 +172,8 @@
             letter-spacing: -0.01em;
             line-height: 1.25;
             text-transform: none;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 1;
         }
 
         .finance-transport {
@@ -280,11 +285,15 @@
         }
 
         .finance-caption {
-            min-height: 2.8em;
+            display: -webkit-box;
+            height: 2.8em;
+            overflow: hidden;
             margin-top: 10px;
             color: #394554;
             font-size: 0.88rem;
             line-height: 1.4;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
         }
 
         .finance-parameter-grid {
@@ -302,7 +311,9 @@
         }
 
         .finance-parameter[hidden] {
-            display: none;
+            display: grid;
+            visibility: hidden;
+            pointer-events: none;
         }
 
         .finance-parameter label,
@@ -384,7 +395,9 @@
             }
 
             .finance-title {
+                height: 3.75em;
                 font-size: 1rem;
+                -webkit-line-clamp: 3;
             }
 
             .finance-button {
@@ -394,6 +407,11 @@
 
             .finance-viz {
                 height: 220px;
+            }
+
+            .finance-caption {
+                height: 5.6em;
+                -webkit-line-clamp: 4;
             }
 
             .finance-parameter {
@@ -409,6 +427,18 @@
             .finance-parameter output {
                 grid-column: 2;
                 grid-row: 1;
+            }
+        }
+
+        @media (min-width: 351px) and (max-width: 480px) {
+            .finance-title {
+                height: 2.5em;
+                -webkit-line-clamp: 2;
+            }
+
+            .finance-caption {
+                height: 4.2em;
+                -webkit-line-clamp: 3;
             }
         }
 
