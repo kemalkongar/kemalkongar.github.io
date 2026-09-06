@@ -227,9 +227,9 @@
         }
         columnNames.forEach((name, column) => {
             const columnX = matrixX + column * cell + cell * 0.5;
-            const columnY = 48;
-            const columnLabel = label(group, columnX, columnY, name, 'end');
-            columnLabel.setAttribute('transform', `rotate(-52 ${columnX} ${columnY})`);
+            const columnY = matrixY - 24;
+            const columnLabel = label(group, columnX, columnY, name, 'middle');
+            columnLabel.setAttribute('transform', `rotate(-45 ${columnX} ${columnY})`);
         });
 
         const averageCorrelation = correlationTotal / pairs;
