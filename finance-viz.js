@@ -227,7 +227,7 @@
         }
         columnNames.forEach((name, column) => {
             const columnX = matrixX + column * cell + cell * 0.5;
-            const columnY = matrixY - 24;
+            const columnY = matrixY - 18;
             const columnLabel = label(group, columnX, columnY, name, 'middle');
             columnLabel.setAttribute('transform', `rotate(-45 ${columnX} ${columnY})`);
         });
