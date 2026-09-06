@@ -5,22 +5,41 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Kemal Kongar, Portfolio Analyst @ Select Equity Group">
+    <meta name="theme-color" content="#0a1628">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
 
     <title>Kemal Kongar</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180x180.png">
+    <link rel="canonical" href="https://www.kemalkongar.com/">
+    <meta property="og:type" content="profile">
+    <meta property="og:title" content="Kemal Kongar">
+    <meta property="og:description" content="Kemal Kongar, Portfolio Analyst @ Select Equity Group">
+    <meta property="og:url" content="https://www.kemalkongar.com/">
+    <meta property="og:site_name" content="Kemal Kongar">
+
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180x180.png">
     <link rel="manifest" href="/site.webmanifest">
+    <link rel="preload" href="/fonts/source-sans-3-variable.woff2" as="font" type="font/woff2" crossorigin>
     <style>
+        @font-face {
+            font-family: "Source Sans 3";
+            src: url("/fonts/source-sans-3-variable.woff2") format("woff2");
+            font-style: normal;
+            font-weight: 200 900;
+            font-display: swap;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        html,
-        body {
-            height: 100%;
+        html {
+            min-height: 100%;
         }
 
         body {
@@ -28,7 +47,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: Calibri, Aptos, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            min-height: 100svh;
+            font-family: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             padding: 20px;
         }
 
@@ -68,6 +89,12 @@
             text-decoration-color: #5a6070;
         }
 
+        a:focus-visible {
+            border-radius: 2px;
+            outline: 2px solid #0a1628;
+            outline-offset: 4px;
+        }
+
         .divider {
             border: none;
             border-top: 1.5px solid #0a1628;
@@ -86,7 +113,7 @@
 
         p {
             color: #1f2937;
-            font-size: 0.95rem;
+            font-size: 1rem;
             line-height: 1.65;
         }
 
@@ -100,9 +127,8 @@
         .links a {
             color: #0a1628;
             text-decoration: none;
-            font-size: 0.95rem;
+            font-size: 1rem;
             font-weight: 500;
-            transition: opacity 0.2s;
         }
 
         .links a:hover {
@@ -114,10 +140,249 @@
             user-select: none;
         }
 
-        .finance-canvas {
+        .finance-lab {
+            color: #0a1628;
+        }
+
+        .finance-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 12px;
+        }
+
+        .finance-kicker {
+            color: #626a75;
+            font-size: 0.72rem;
+            font-weight: 650;
+            letter-spacing: 0.09em;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        .finance-title {
+            display: -webkit-box;
+            height: 1.25em;
+            overflow: hidden;
+            margin: 3px 0 0;
+            color: #0a1628;
+            font-size: 1.1rem;
+            font-weight: 650;
+            letter-spacing: -0.01em;
+            line-height: 1.25;
+            text-transform: none;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 1;
+        }
+
+        .finance-transport {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex: 0 0 auto;
+        }
+
+        .finance-button {
+            appearance: none;
+            border: 1px solid rgba(10, 22, 40, 0.18);
+            border-radius: 3px;
+            background: transparent;
+            color: #0a1628;
+            cursor: pointer;
+            font: 600 0.76rem/1 "Source Sans 3", system-ui, sans-serif;
+            min-height: 30px;
+            padding: 0 9px;
+        }
+
+        .finance-button:hover {
+            background: rgba(10, 22, 40, 0.06);
+        }
+
+        .finance-button:focus-visible,
+        .finance-tab:focus-visible,
+        .finance-range:focus-visible {
+            outline: 2px solid #2f7e7a;
+            outline-offset: 2px;
+        }
+
+        .finance-counter {
+            color: #626a75;
+            font-size: 0.76rem;
+            min-width: 34px;
+            text-align: center;
+        }
+
+        .finance-figure {
+            margin: 0;
+        }
+
+        .finance-stage {
+            position: relative;
+            overflow: hidden;
+            border-block: 1px solid rgba(10, 22, 40, 0.12);
+        }
+
+        .finance-viz {
             display: block;
             width: 100%;
-            height: 100px;
+            height: 210px;
+            touch-action: none;
+        }
+
+        .finance-viz text {
+            font-family: "Source Sans 3", system-ui, sans-serif;
+        }
+
+        .finance-viz .axis {
+            stroke: #9ca3af;
+            stroke-width: 1;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .finance-viz .grid {
+            stroke: rgba(10, 22, 40, 0.10);
+            stroke-width: 1;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .finance-viz .zero-line {
+            stroke: rgba(10, 22, 40, 0.28);
+            stroke-dasharray: 3 3;
+            stroke-width: 1;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .finance-viz .chart-label {
+            fill: #626a75;
+            font-size: 11px;
+        }
+
+        .finance-viz .chart-note {
+            fill: #394554;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .finance-viz .chart-value {
+            fill: #0a1628;
+            font-size: 15px;
+            font-weight: 680;
+        }
+
+        .finance-viz .chart-on-color {
+            fill: #fffdf9;
+            font-size: 12px;
+            font-weight: 650;
+        }
+
+        .finance-viz .mark {
+            transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        .finance-viz [data-tip] {
+            cursor: help;
+        }
+
+        .finance-caption {
+            display: -webkit-box;
+            height: 2.8em;
+            overflow: hidden;
+            margin-top: 10px;
+            color: #394554;
+            font-size: 0.88rem;
+            line-height: 1.4;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+
+        .finance-parameter-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .finance-parameter {
+            display: grid;
+            grid-template-columns: minmax(116px, auto) 1fr minmax(82px, auto);
+            align-items: center;
+            gap: 10px;
+        }
+
+        .finance-parameter[hidden] {
+            display: grid;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .finance-parameter label,
+        .finance-parameter output {
+            color: #626a75;
+            font-size: 0.76rem;
+            line-height: 1.2;
+        }
+
+        .finance-parameter output {
+            color: #0a1628;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .finance-range {
+            width: 100%;
+            accent-color: #2f7e7a;
+            cursor: pointer;
+        }
+
+        .finance-tabs {
+            display: flex;
+            gap: 5px;
+            margin-top: 14px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scrollbar-width: thin;
+        }
+
+        .finance-tab {
+            appearance: none;
+            border: 0;
+            border-bottom: 2px solid transparent;
+            background: transparent;
+            color: #6b7280;
+            cursor: pointer;
+            flex: 0 0 auto;
+            font: 600 0.72rem/1.2 "Source Sans 3", system-ui, sans-serif;
+            padding: 5px 6px 6px;
+        }
+
+        .finance-tab:hover {
+            color: #0a1628;
+        }
+
+        .finance-tab[aria-current="true"] {
+            border-bottom-color: #2f7e7a;
+            color: #0a1628;
+        }
+
+        .finance-tooltip {
+            position: absolute;
+            z-index: 2;
+            max-width: 190px;
+            border: 1px solid rgba(10, 22, 40, 0.14);
+            border-radius: 3px;
+            background: #fffdf9;
+            box-shadow: 0 4px 14px rgba(10, 22, 40, 0.14);
+            color: #263342;
+            font-size: 0.74rem;
+            line-height: 1.3;
+            padding: 6px 8px;
+            pointer-events: none;
+            transform: translate(-50%, calc(-100% - 10px));
+        }
+
+        .finance-tooltip[hidden] {
+            display: none;
         }
 
         @media (max-width: 480px) {
@@ -125,20 +390,77 @@
                 padding: 28px 24px;
             }
 
-            .finance-canvas {
-                height: 130px;
+            .finance-header {
+                gap: 10px;
+            }
+
+            .finance-title {
+                height: 3.75em;
+                font-size: 1rem;
+                -webkit-line-clamp: 3;
+            }
+
+            .finance-button {
+                min-height: 32px;
+                padding-inline: 8px;
+            }
+
+            .finance-viz {
+                height: 220px;
+            }
+
+            .finance-caption {
+                height: 5.6em;
+                -webkit-line-clamp: 4;
+            }
+
+            .finance-parameter {
+                grid-template-columns: 1fr minmax(80px, auto);
+                gap: 6px 10px;
+            }
+
+            .finance-parameter .finance-range {
+                grid-column: 1 / -1;
+                grid-row: 2;
+            }
+
+            .finance-parameter output {
+                grid-column: 2;
+                grid-row: 1;
+            }
+        }
+
+        @media (min-width: 351px) and (max-width: 480px) {
+            .finance-title {
+                height: 2.5em;
+                -webkit-line-clamp: 2;
+            }
+
+            .finance-caption {
+                height: 4.2em;
+                -webkit-line-clamp: 3;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .subtle-link {
+                transition: none;
+            }
+
+            .finance-viz .mark {
+                transition: none;
             }
         }
     </style>
 </head>
 
 <body>
-    <div class="card">
+    <main class="card">
         <h1>Kemal Kongar</h1>
         <p class="title">Portfolio Analyst @ <a href="https://www.selectequity.com/" target="_blank"
-                class="subtle-link">Select Equity Group</a></p>
+                rel="noopener" class="subtle-link">Select Equity Group</a></p>
 
-        <div class="divider"></div>
+        <hr class="divider">
 
         <h2>About</h2>
         <p>
@@ -146,19 +468,69 @@
             2021 and hold a Bachelor's degree in Computer Science and Political Science from McGill University.
         </p>
 
-        <div class="divider"></div>
+        <hr class="divider">
 
-        <div class="links">
-            <a href="https://www.linkedin.com/in/kemalkongar" target="_blank">LinkedIn</a>
-            <span class="sep">&middot;</span>
+        <nav class="links" aria-label="Contact">
+            <a href="https://www.linkedin.com/in/kemalkongar" target="_blank" rel="noopener">LinkedIn</a>
+            <span class="sep" aria-hidden="true">&middot;</span>
             <a href="mailto:contact@kemalkongar.com">Email</a>
-        </div>
+        </nav>
 
-        <div class="divider"></div>
-        <canvas class="finance-canvas" id="financeCanvas"></canvas>
-    </div>
+        <hr class="divider">
 
-    <script src="canvas.js"></script>
+        <section class="finance-lab" id="financeLab" aria-labelledby="financeTitle">
+            <header class="finance-header">
+                <div>
+                    <p class="finance-kicker">Portfolio analytics</p>
+                    <h2 class="finance-title" id="financeTitle">Factor-mimicking portfolio</h2>
+                </div>
+                <div class="finance-transport" aria-label="Animation controls">
+                    <button class="finance-button" type="button" data-action="previous" aria-label="Previous concept">←</button>
+                    <span class="finance-counter" id="financeCounter" aria-hidden="true">1 / 4</span>
+                    <button class="finance-button" type="button" data-action="next" aria-label="Next concept">→</button>
+                    <button class="finance-button" type="button" data-action="play"
+                        aria-label="Pause animation">Pause</button>
+                </div>
+            </header>
+
+            <figure class="finance-figure">
+                <div class="finance-stage" id="financeStage">
+                    <svg class="finance-viz" id="financeViz" viewBox="0 0 616 210" role="img"
+                        aria-labelledby="financeSvgTitle financeSvgDescription">
+                        <title id="financeSvgTitle">Factor-mimicking portfolio</title>
+                        <desc id="financeSvgDescription">Rolling rank IC is split between in-sample and out-of-sample periods. The portfolio has unit exposure to the signal and zero exposure to its control factors.</desc>
+                        <g id="financePlot"></g>
+                    </svg>
+                    <div class="finance-tooltip" id="financeTooltip" role="tooltip" hidden></div>
+                </div>
+                <figcaption class="finance-caption" id="financeCaption">
+                    Mean IC is compared in-sample and out-of-sample.
+                </figcaption>
+            </figure>
+
+            <div class="finance-parameter-grid" aria-label="Chart parameters">
+                <div class="finance-parameter">
+                    <label id="financeControlLabel" for="financeControl">Out-of-sample begins</label>
+                    <input class="finance-range" id="financeControl" type="range" min="0" max="100" value="65">
+                    <output id="financeControlOutput" for="financeControl">Month 20</output>
+                </div>
+                <div class="finance-parameter" id="financeSecondaryParameter" hidden>
+                    <label id="financeSecondaryLabel" for="financeSecondaryControl">Inflation surprise</label>
+                    <input class="finance-range" id="financeSecondaryControl" type="range" min="0" max="100" value="65">
+                    <output id="financeSecondaryOutput" for="financeSecondaryControl">Rising</output>
+                </div>
+            </div>
+
+            <nav class="finance-tabs" aria-label="Portfolio concepts">
+                <button class="finance-tab" type="button" data-scene="0" aria-current="true">Signal</button>
+                <button class="finance-tab" type="button" data-scene="1">Breadth</button>
+                <button class="finance-tab" type="button" data-scene="2">Risk</button>
+                <button class="finance-tab" type="button" data-scene="3">Stress</button>
+            </nav>
+        </section>
+    </main>
+
+    <script src="finance-viz.js"></script>
 </body>
 
 </html>
