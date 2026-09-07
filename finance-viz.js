@@ -42,8 +42,6 @@
     let currentScene = 0;
     let autoTimer = null;
     let isVisible = true;
-    let isHovering = false;
-    let hasFocus = false;
     let isDragging = false;
     let activeInteraction = null;
     const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -477,7 +475,7 @@
 
     function scheduleAuto() {
         clearAutoTimer();
-        if (isPaused || motionPreference.matches || document.hidden || !isVisible || isHovering || hasFocus) return;
+        if (isPaused || motionPreference.matches || document.hidden || !isVisible) return;
         autoTimer = window.setTimeout(() => {
             currentScene = (currentScene + 1) % scenes.length;
             render(true);
@@ -546,6 +544,10 @@
     playButton.addEventListener('click', () => {
         isPaused = !isPaused;
         updatePlayButton();
+        if (!isPaused) {
+            currentScene = (currentScene + 1) % scenes.length;
+            render(true);
+        }
         scheduleAuto();
     });
     sceneTabs.forEach(tab => {
@@ -574,23 +576,6 @@
     });
     svg.addEventListener('pointercancel', () => { isDragging = false; });
 
-    lab.addEventListener('mouseenter', () => {
-        isHovering = true;
-        clearAutoTimer();
-    });
-    lab.addEventListener('mouseleave', () => {
-        isHovering = false;
-        scheduleAuto();
-    });
-    lab.addEventListener('focusin', () => {
-        hasFocus = true;
-        clearAutoTimer();
-    });
-    lab.addEventListener('focusout', event => {
-        if (lab.contains(event.relatedTarget)) return;
-        hasFocus = false;
-        scheduleAuto();
-    });
     lab.addEventListener('keydown', event => {
         if (event.target.matches('input[type="range"]')) return;
         if (event.key === 'ArrowLeft') {
