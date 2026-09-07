@@ -11,8 +11,6 @@
     const svgDescription = document.getElementById('financeSvgDescription');
     const caption = document.getElementById('financeCaption');
     const counter = document.getElementById('financeCounter');
-    const stage = document.getElementById('financeStage');
-    const tooltip = document.getElementById('financeTooltip');
     const control = document.getElementById('financeControl');
     const controlLabel = document.getElementById('financeControlLabel');
     const controlOutput = document.getElementById('financeControlOutput');
@@ -73,8 +71,7 @@
         const node = document.createElementNS(NS, tag);
         Object.entries(attributes || {}).forEach(([key, value]) => {
             if (value === undefined || value === null) return;
-            if (key === 'dataTip') node.dataset.tip = value;
-            else node.setAttribute(key, String(value));
+            node.setAttribute(key, String(value));
         });
         if (textValue !== undefined) node.textContent = textValue;
         return node;
@@ -160,8 +157,7 @@
             r: compact ? 2.2 : 2.7,
             fill: index < split ? COLORS.blue : COLORS.teal,
             stroke: COLORS.cream,
-            'stroke-width': 1,
-            dataTip: `Month ${index + 1}: rank IC ${signed(value, 2, '')}; ${index < split ? 'in-sample' : 'out-of-sample'}`
+            'stroke-width': 1
         }));
         line(group, splitX, bounds.top, splitX, bounds.bottom, 'zero-line');
         label(group, bounds.left, 192, 'M1', 'start');
@@ -205,9 +201,7 @@
                     height: cell - 1,
                     rx: 1,
                     fill: COLORS.teal,
-                    opacity: 0.08 + rho * 0.84,
-                    dataTip: row === column ? `${names[row]} with itself`
-                        : `${names[row]} / ${names[column]} overlap: ${(rho * 100).toFixed(0)}%`
+                    opacity: 0.08 + rho * 0.84
                 });
             }
             label(group, matrixX - 5, matrixY + row * cell + cell * 0.7, rowNames[row], 'end');
@@ -271,8 +265,7 @@
                 width: segmentWidth,
                 height: 26,
                 rx: 2,
-                fill: source.color,
-                dataTip: `${source.name}: ${(source.share * 100).toFixed(0)}% of active risk. Drivers: ${source.drivers}.`
+                fill: source.color
             });
             const segmentLabel = compact ? source.compactName : source.name;
             if (segmentWidth > (compact ? 34 : 44)) {
@@ -294,8 +287,7 @@
                 height: 14,
                 rx: 2,
                 fill: source.color,
-                opacity: 0.88,
-                dataTip: `${source.name}: ${(source.share * 100).toFixed(0)}% of active risk. Drivers: ${source.drivers}.`
+                opacity: 0.88
             });
             label(group, barRight + 7, y + 10, `${(source.share * 100).toFixed(0)}%`, 'start', 'chart-note');
             if (!compact) label(group, 406, y + 10, source.drivers, 'start');
@@ -390,8 +382,7 @@
                 height: 16,
                 rx: 2,
                 fill: value >= 0 ? COLORS.teal : COLORS.red,
-                opacity: 0.86,
-                dataTip: `${names[index]} contribution: ${signed(value, 1, '%')}`
+                opacity: 0.86
             });
             label(group, value >= 0 ? zeroX + length + 4 : zeroX - length - 4, y + 4,
                 signed(value, 1, '%'), value >= 0 ? 'start' : 'end');
@@ -507,7 +498,6 @@
 
     function showScene(index, fromUser) {
         currentScene = (index + scenes.length) % scenes.length;
-        hideTooltip();
         if (fromUser) pauseForInteraction();
         render(true);
         scheduleAuto();
@@ -551,26 +541,6 @@
         render(false);
     }
 
-    function hideTooltip() {
-        tooltip.hidden = true;
-    }
-
-    function showTooltip(event) {
-        if (isDragging) return;
-        const target = event.target.closest('[data-tip]');
-        if (!target) {
-            hideTooltip();
-            return;
-        }
-        const rect = stage.getBoundingClientRect();
-        const x = clamp(event.clientX - rect.left, 90, rect.width - 90);
-        const y = clamp(event.clientY - rect.top, 38, rect.height - 8);
-        tooltip.textContent = target.dataset.tip;
-        tooltip.style.left = `${x}px`;
-        tooltip.style.top = `${y}px`;
-        tooltip.hidden = false;
-    }
-
     lab.querySelector('[data-action="previous"]').addEventListener('click', () => showScene(currentScene - 1, true));
     lab.querySelector('[data-action="next"]').addEventListener('click', () => showScene(currentScene + 1, true));
     playButton.addEventListener('click', () => {
@@ -592,20 +562,17 @@
             || (point.y >= activeInteraction.y0 && point.y <= activeInteraction.y1);
         if (!insideX || !insideY) return;
         isDragging = true;
-        hideTooltip();
         svg.setPointerCapture(event.pointerId);
         updateFromPointer(event);
     });
     svg.addEventListener('pointermove', event => {
         if (isDragging) updateFromPointer(event);
-        else showTooltip(event);
     });
     svg.addEventListener('pointerup', event => {
         isDragging = false;
         if (svg.hasPointerCapture(event.pointerId)) svg.releasePointerCapture(event.pointerId);
     });
     svg.addEventListener('pointercancel', () => { isDragging = false; });
-    svg.addEventListener('pointerleave', hideTooltip);
 
     lab.addEventListener('mouseenter', () => {
         isHovering = true;
