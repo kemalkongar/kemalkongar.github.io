@@ -24,6 +24,7 @@
     const NS = 'http://www.w3.org/2000/svg';
     const HEIGHT = 210;
     const AUTO_DELAY = 6500;
+    const RESUME_DELAY = 1100;
     const COLORS = {
         ink: '#0a1628',
         muted: '#626a75',
@@ -473,14 +474,14 @@
         autoTimer = null;
     }
 
-    function scheduleAuto() {
+    function scheduleAuto(delay = AUTO_DELAY) {
         clearAutoTimer();
         if (isPaused || motionPreference.matches || document.hidden || !isVisible) return;
         autoTimer = window.setTimeout(() => {
             currentScene = (currentScene + 1) % scenes.length;
             render(true);
             scheduleAuto();
-        }, AUTO_DELAY);
+        }, delay);
     }
 
     function updatePlayButton() {
@@ -547,6 +548,8 @@
         if (!isPaused) {
             currentScene = (currentScene + 1) % scenes.length;
             render(true);
+            scheduleAuto(RESUME_DELAY);
+            return;
         }
         scheduleAuto();
     });
