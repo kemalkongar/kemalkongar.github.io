@@ -81,7 +81,8 @@
 
         h1 {
             color: #0a1628;
-            font-size: 2rem;
+            font-size: 2.375rem;
+            line-height: 1.1;
             font-weight: 700;
             letter-spacing: -0.02em;
         }
@@ -119,7 +120,6 @@
             margin: 28px 0;
         }
 
-        h2,
         .finance-kicker {
             color: #4b5563;
             font-size: 0.78rem;
@@ -129,10 +129,6 @@
             text-transform: uppercase;
         }
 
-        h2 {
-            margin-bottom: 12px;
-        }
-
         p {
             color: #1f2937;
             font-size: 1rem;
@@ -140,22 +136,33 @@
         }
 
         .links {
-            margin-top: 18px;
+            margin-top: 14px;
             display: flex;
             align-items: center;
             gap: 6px;
             flex-wrap: wrap;
         }
 
+        .bio {
+            max-width: 68ch;
+            margin-top: 20px;
+        }
+
         .links a {
+            display: inline-block;
+            padding-block: 4px;
             color: #0a1628;
-            text-decoration: none;
             font-size: 1rem;
             font-weight: 500;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            text-decoration-color: #9ca3af;
+            text-underline-offset: 3px;
+            transition: text-decoration-color 0.2s;
         }
 
         .links a:hover {
-            text-decoration: underline;
+            text-decoration-color: #0a1628;
         }
 
         .links .sep {
@@ -185,7 +192,6 @@
             font-weight: 650;
             letter-spacing: -0.01em;
             line-height: 1.25;
-            text-transform: none;
             -webkit-box-orient: vertical;
             -webkit-line-clamp: 1;
         }
@@ -430,7 +436,8 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
-            .subtle-link {
+            .subtle-link,
+            .links a {
                 transition: none;
             }
 
@@ -444,15 +451,13 @@
 <body>
     <main class="card">
         <h1>Kemal Kongar</h1>
-        <p class="title">Portfolio Analyst @ <a href="https://www.selectequity.com/" target="_blank"
+        <p class="title">Portfolio Analyst at <a href="https://www.selectequity.com/" target="_blank"
                 rel="noopener" class="subtle-link">Select Equity Group</a></p>
 
-        <hr class="divider">
-
-        <h2>About</h2>
-        <p>
-            I apply quantitative methods and data analytics across capital markets. I've worked in the industry since
-            2021 and hold a Bachelor's degree in Computer Science and Political Science from McGill University.
+        <p class="bio">
+            I apply quantitative methods to portfolio research and risk. I began in software and machine learning in
+            2021, moved into electronic trading in 2022, and have worked in alternative assets since 2023. I hold a
+            bachelor’s degree in Computer Science and Political Science from McGill University.
         </p>
 
         <nav class="links" aria-label="Contact">
